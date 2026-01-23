@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGRT - Sistema de Gobernanza de Riesgo Tecnológico</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Charter&display=swap"
+        rel="stylesheet">
+    <!-- MSAL.js CDN -->
+    <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+    <!-- Config and Services -->
+    <script src="authConfig.js"></script>
+    <script src="graphService.js"></script>
+    <style>
+        :root {
+            --bg-color: #F9F8F6;
+            --card-bg: #FFFFFF;
+            --border-color: #E6E4E0;
+            --text-primary: #1D1C1A;
+            --text-secondary: #666561;
+            --accent-terracotta: #D97757;
+            --accent-purple: #7C3AED;
+
+            --risk-critical: #B91C1C;
+            --risk-high: #D97706;
+            --risk-medium: #059669;
+            --risk-low: #059669;
+            --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            height: 100vh;
+            width: 100vw;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .main-nav {
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .main-nav-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            padding-left: 8px;
+        }
+
+        .logo-text div:first-child {
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .logo-text div:last-child {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: #F3F4F6;
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: #EFF6FF;
+            color: #2563EB;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .user-section {
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-left: 8px;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            background: #E5E7EB;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info div:first-child {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .user-info div:last-child {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Existing layout adjustments */
+        .view-section {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .view-section.active {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+        }
+
+        .main-content {
+            padding: 40px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .trackers-panel {
+            background: #fff;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Trackers Components */
+        .tracker-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            position: relative;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .tracker-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            background: #FFF1E7;
+            color: #D97757;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Circular Progress */
+        .progress-circle {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 24px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+
+        .progress-circle .bg {
+            stroke: #F3F4F6;
+        }
+
+        .progress-circle .progress {
+            stroke: var(--accent-terracotta);
+            stroke-dasharray: 440;
+            /* 2 * PI * 70 */
+            stroke-dashoffset: 440;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-text {
+            position: absolute;
+            text-align: center;
+        }
+
+        .progress-text .number {
+            font-size: 2.75rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text-primary);
+        }
+
+        .progress-text .label-days {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Evidence & AI Chips */
+        .evidence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .evidence-item {
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+
+        .evidence-item.verified {
+            background: #F0FDF4;
+            border-color: #DCFCE7;
+        }
+
+        .evidence-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 2px solid #E5E7EB;
+        }
+
+        .verified .evidence-icon {
+            background: #10B981;
+            border-color: #10B981;
+            color: #fff;
+        }
+
+        .suggestion-chip {
+            background: #F4F0FF;
+            border: 1px solid rgba(124, 58, 237, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Spacing & Utilities */
+        .glass {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            margin-bottom: 32px;
+        }
+
+        .info-card {
+            padding: 20px;
+            border-radius: 12px;
+            background: #fbfbfb;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        select,
+        input,
+        textarea {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        select:focus,
+        input:focus,
+        textarea:focus {
+            outline: 2px solid var(--accent-terracotta);
+            border-color: transparent;
+        }
+
+        .control-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .info-card {
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        .label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        /* Trackers Panel Styles */
+        .trackers-panel {
+            background: #fff;
+            border-left: 1px solid var(--border-color);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            overflow-y: auto;
+        }
+
+        .tracker-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            position: relative;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .tracker-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            background: #FFF1E7;
+            color: #D97757;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Circular Progress */
+        .progress-circle {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 24px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+
+        .progress-circle .bg {
+            stroke: #F3F4F6;
+        }
+
+        .progress-circle .progress {
+            stroke: #D97757;
+            stroke-dasharray: 408;
+            /* 2 * PI * 65 */
+            stroke-dashoffset: 408;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            text-align: center;
+        }
+
+        .progress-text .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .progress-text .label-days {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Evidence Items */
+        .evidence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .evidence-item {
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .evidence-item.verified {
+            background: #F0FDF4;
+            border-color: #DCFCE7;
+        }
+
+        .evidence-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 2px solid #E5E7EB;
+        }
+
+        .verified .evidence-icon {
+            background: #10B981;
+            border-color: #10B981;
+            color: #fff;
+        }
+
+        .evidence-info {
+            flex-grow: 1;
+        }
+
+        .evidence-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .evidence-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .verified .evidence-status {
+            color: #059669;
+        }
+
+        /* Status Colors */
+        .critical {
+            background-color: #FEF2F2;
+            color: var(--risk-critical);
+            border-color: #FEE2E2;
+        }
+
+        .high {
+            background-color: #FFFBEB;
+            color: var(--risk-high);
+            border-color: #FEF3C7;
+        }
+
+        .medium {
+            background-color: #ECFDF5;
+            color: var(--risk-medium);
+            border-color: #D1FAE5;
+        }
+
+        .low {
+            background-color: #ECFDF5;
+            color: var(--risk-low);
+            border-color: #D1FAE5;
+        }
+
+        .btn-primary {
+            background: var(--accent-terracotta);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #c2664a;
+        }
+
+        .label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Main Navigation Sidebar -->
+    <nav class="main-nav">
+        <div class="main-nav-header">
+            <div class="logo-text">
+                <div>CyberRisk</div>
+                <div>Control Center</div>
+            </div>
+        </div>
+        <div class="nav-items">
+            <a href="#" class="nav-item" onclick="showSection('riesgos')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                Riesgos
+            </a>
+            <a href="#" class="nav-item active" onclick="showSection('proyectos')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                Proyectos
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('rcs')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+                RCS
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('lineamientos')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+                Lineamientos
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('reportes')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                </svg>
+                Reportes
+            </a>
+        </div>
+        <div class="user-section">
+            <div class="avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+            </div>
+            <div class="user-info" id="user-info-display">
+                <div id="user-name">Invitado</div>
+                <div id="user-email">Inicie sesión para continuar</div>
+            </div>
+            <button id="login-btn" class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;"
+                onclick="login()">Login</button>
+            <button id="logout-btn" class="btn-primary"
+                style="width: auto; padding: 6px 12px; font-size: 0.75rem; display: none;"
+                onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <!-- PROYECTOS VIEW -->
+    <div id="proyectos-view" class="view-section active">
+        <main class="main-content">
+            <header style="margin-bottom: 40px;">
+                <h1 style="margin-bottom: 8px;">Gobernanza de Proyectos</h1>
+                <p style="color: var(--text-secondary); margin: 0;">Monitoreo de cumplimiento y mitigación de riesgos
+                    técnicos.</p>
+            </header>
+
+            <div class="projects-row">
+                <div class="project-card">
+                    <div class="project-id">SIT-RCS-2026-001</div>
+                    <div style="font-weight: 500; margin-bottom: 12px;">Cloud Security Infra</div>
+                    <div class="progress-details"
+                        style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px;">
+                        <span>Cumplimiento Global</span>
+                        <span style="font-weight: 600;">75%</span>
+                    </div>
+                    <div class="progress-container" style="background: #F3F4F6;">
+                        <div class="progress-bar" style="width: 75%; background: var(--accent-terracotta);"></div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-id">SIT-RCS-2026-042</div>
+                    <div style="font-weight: 500; margin-bottom: 12px;">Mitigación Ransomware</div>
+                    <div class="progress-details"
+                        style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px;">
+                        <span>Cumplimiento Global</span>
+                        <span style="font-weight: 600; color: var(--risk-critical);">30%</span>
+                    </div>
+                    <div class="progress-container" style="background: #F3F4F6;">
+                        <div class="progress-bar" style="width: 30%; background: var(--risk-critical);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="glass">
+                <h3>Dashboard de Cumplimiento</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                    <div class="info-card">
+                        <div class="label">Proyectos Activos</div>
+                        <div class="value" style="font-size: 2rem; font-weight: 700;">12</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="label">Hallazgos Abiertos</div>
+                        <div class="value" style="font-size: 2rem; font-weight: 700; color: var(--risk-critical);">45
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="trackers-panel">
+            <div class="tracker-card">
+                <div class="tracker-title">Risk Advisor</div>
+                <div class="ai-messages" style="margin-top: 20px;">
+                    <div class="suggestion-chip">
+                        <strong>Insight de Riesgo:</strong> El vector de ataque por <em>Credential Stuffing</em> es
+                        crítico para este proyecto debido a la exposición de la interfaz pública.
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto;">
+                <div class="label" style="margin-bottom: 12px;">Consultoría Vertex AI</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" placeholder="Duda técnica..." style="flex: 1;">
+                    <button class="btn-primary"
+                        style="width: 48px; border-radius: 12px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- RIESGOS VIEW (Analysis) -->
+    <div id="riesgos-view" class="view-section">
+        <main class="main-content">
+            <header style="margin-bottom: 40px;">
+                <h1 style="margin-bottom: 8px;">Análisis de Riesgos</h1>
+                <p style="color: var(--text-secondary); margin: 0;">Evaluación técnica de controles y vectores de
+                    ataque.</p>
+            </header>
+
+            <section class="glass">
+                <div class="control-selector">
+                    <div style="flex: 1">
+                        <div class="label">Seleccionar Control (Maestra 75)</div>
+                        <select id="control-select" style="width: 100%" onchange="updateControlInfo()">
+                            <option value="">-- Seleccione un control --</option>
+                            <option value="ACC-001">ACC-001: Autenticación Multi-factor (MFA)</option>
+                            <option value="DAT-002">DAT-002: Encriptación de Datos en Reposo</option>
+                            <option value="LOG-003">LOG-003: Monitoreo de Logs 24/7</option>
+                            <option value="VUL-004">VUL-004: Gestión de Vulnerabilidades</option>
+                            <option value="NET-005">NET-005: Segmentación de Red</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="label">SLA Dinámico</div>
+                        <div id="sla-badge" class="info-card" style="padding: 8px 15px; text-align: center;">-</div>
+                    </div>
+                </div>
+
+                <div class="control-details" style="margin-top: 20px;">
+                    <div class="info-card" style="grid-column: span 2;">
+                        <div class="label">Justificación Técnica (Vector de Ataque)</div>
+                        <div id="justification-text" class="value">Seleccione un control para ver la inteligencia
+                            base...
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="label">Guía de Evidencia (Artefactos)</div>
+                        <div id="evidence-guide" class="value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="label">Fecha Límite (SLA)</div>
+                        <div id="due-date" class="value" style="font-weight: 500;">-</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="trackers-panel">
+            <div class="tracker-card">
+                <div class="tracker-header">
+                    <span class="tracker-title">SLA Tracker</span>
+                    <span id="urgent-badge" class="status-badge" style="display: none;">Urgent</span>
+                </div>
+
+                <div class="progress-circle">
+                    <svg viewBox="0 0 160 160">
+                        <circle class="bg" cx="80" cy="80" r="70"></circle>
+                        <circle id="sla-circle" class="progress" cx="80" cy="80" r="70"></circle>
+                    </svg>
+                    <div class="progress-text">
+                        <div id="days-count" class="number">-</div>
+                        <div class="label-days">Days Left</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">Remediation
+                        Deadline</div>
+                    <div id="deadline-date"
+                        style="font-size: 1.25rem; font-family: 'Charter', serif; font-weight: 700;">-</div>
+                </div>
+            </div>
+
+            <div class="ai-messages" style="margin-top: 20px;">
+                <!-- AI Tips injected here -->
+            </div>
+
+            <div class="tracker-card" style="flex-grow: 1; border: none; box-shadow: none; padding: 0;">
+                <div class="tracker-title" style="margin-bottom: 20px;">Required Evidence</div>
+                <div id="evidence-list" class="evidence-list">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+            <div style="margin-top: auto;">
+                <div class="label" style="margin-bottom: 12px;">Consultoría Vertex AI</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" placeholder="Duda técnica..." style="flex: 1;">
+                    <button class="btn-primary"
+                        style="width: 48px; border-radius: 12px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- RCS VIEW (Findings) -->
+    <div id="rcs-view" class="view-section">
+        <main class="main-content">
+            <header style="margin-bottom: 40px;">
+                <h1 style="margin-bottom: 8px;">Registro de RCS</h1>
+                <p style="color: var(--text-secondary); margin: 0;">Gestión de hallazgos y evidencias SharePoint.</p>
+            </header>
+
+            <section class="glass">
+                <h3>Registro de Hallazgo (RCS)</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div class="label">Expediente</div>
+                        <input type="text" value="SIT-RCS-2026-001" readonly>
+                    </div>
+                    <div>
+                        <div class="label">Estado del Control</div>
+                        <select>
+                            <option>Pendiente de Revisión</option>
+                            <option>En Curso</option>
+                            <option>Implementado/Mitigado</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <div class="label">Comentarios Técnicos / Justificación de Cierre</div>
+                        <textarea rows="4"
+                            placeholder="Describa cómo se implementó el control o la justificación de riesgo..."></textarea>
+                    </div>
+                </div>
+                <button class="btn-primary" style="margin-top: 24px;" onclick="handleRegistrarHallazgo()">REGISTRAR
+                    HALLAZGO EN RCS</button>
+            </section>
+        </main>
+
+        <aside class="trackers-panel">
+            <div class="tracker-card">
+                <div class="tracker-title">SharePoint Sync</div>
+                <div style="padding: 20px 0;">
+                    <div class="evidence-item verified">
+                        <div class="evidence-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                        </div>
+                        <div class="evidence-info">
+                            <div class="evidence-name">Hallazgos.xlsx</div>
+                            <div class="evidence-status">Sincronizado</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- LINEAMIENTOS VIEW -->
+    <div id="lineamientos-view" class="view-section">
+        <main class="main-content">
+            <header style="margin-bottom: 40px;">
+                <h1 style="margin-bottom: 8px;">Lineamientos Técnicos</h1>
+                <p style="color: var(--text-secondary); margin: 0;">Lista Maestra de Controles (Lista 3:
+                    lineamientos.xlsx)</p>
+            </header>
+
+            <section class="glass">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border-color);">
+                            <th style="padding: 12px; font-size: 0.8rem; color: var(--text-secondary);">ID</th>
+                            <th style="padding: 12px; font-size: 0.8rem; color: var(--text-secondary);">CONTROL</th>
+                            <th style="padding: 12px; font-size: 0.8rem; color: var(--text-secondary);">SEVERIDAD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #f9f9f9;">
+                            <td style="padding: 12px; font-weight: 600;">ACC-001</td>
+                            <td style="padding: 12px;">Autenticación Multi-factor (MFA)</td>
+                            <td style="padding: 12px;"><span class="status-badge"
+                                    style="background: #FEF2F2; color: #B91C1C;">Crítico</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f9f9f9;">
+                            <td style="padding: 12px; font-weight: 600;">DAT-002</td>
+                            <td style="padding: 12px;">Encriptación de Datos en Reposo</td>
+                            <td style="padding: 12px;"><span class="status-badge"
+                                    style="background: #ECFDF5; color: #059669;">Bajo</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <aside class="trackers-panel">
+            <div class="tracker-card">
+                <div class="tracker-title">Control Hub</div>
+                <div style="padding: 20px 0;">
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Total de controles: 75 cargados desde
+                        lineamientos.xlsx</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- REPORTES VIEW -->
+    <div id="reportes-view" class="view-section">
+        <main class="main-content">
+            <header style="margin-bottom: 40px;">
+                <h1 style="margin-bottom: 8px;">Reportes Ejecutivos</h1>
+                <p style="color: var(--text-secondary); margin: 0;">Visualización de KPI's de riesgo y cumplimiento.</p>
+            </header>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <section class="glass">
+                    <h3>Cumplimiento por Dominio</h3>
+                    <div style="height: 200px; display: flex; align-items: flex-end; gap: 20px; padding-top: 20px;">
+                        <div
+                            style="flex: 1; background: var(--accent-terracotta); height: 75%; border-radius: 4px 4px 0 0;">
+                        </div>
+                        <div style="flex: 1; background: #E5E7EB; height: 40%; border-radius: 4px 4px 0 0;"></div>
+                        <div
+                            style="flex: 1; background: var(--accent-terracotta); height: 60%; border-radius: 4px 4px 0 0;">
+                        </div>
+                        <div style="flex: 1; background: #E5E7EB; height: 90%; border-radius: 4px 4px 0 0;"></div>
+                    </div>
+                </section>
+                <section class="glass">
+                    <h3>Tendencia de Hallazgos</h3>
+                    <div
+                        style="height: 200px; border-left: 2px solid var(--border-color); border-bottom: 2px solid var(--border-color); margin-top: 20px; position: relative;">
+                        <!-- Mock chart line -->
+                        <div
+                            style="position: absolute; bottom: 10px; left: 0; width: 100%; height: 2px; background: var(--accent-purple); transform: rotate(-15deg); transform-origin: left;">
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <aside class="trackers-panel">
+            <div class="tracker-card">
+                <div class="tracker-title">Quick Export</div>
+                <button class="btn-primary" style="margin-top: 10px;">Exportar a PDF</button>
+                <button class="btn-primary"
+                    style="margin-top: 10px; background: #F3F4F6; color: var(--text-primary);">Exportar a Excel</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // --- Authentication Logic ---
+        async function login() {
+            try {
+                await msalInstance.loginPopup(loginRequest);
+                checkUser();
+                loadSharePointData();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function logout() {
+            msalInstance.logoutPopup();
+        }
+
+        function checkUser() {
+            const account = msalInstance.getAllAccounts()[0];
+            if (account) {
+                document.getElementById('user-name').innerText = account.name;
+                document.getElementById('user-email').innerText = account.username;
+                document.getElementById('login-btn').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'block';
+            } else {
+                document.getElementById('user-name').innerText = "Invitado";
+                document.getElementById('user-email').innerText = "Inicie sesión para continuar";
+                document.getElementById('login-btn').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'none';
+            }
+        }
+
+        // --- Data Loading Logic ---
+        let liveControls = {};
+
+        async function loadSharePointData() {
+            if (!msalInstance.getAllAccounts()[0]) return;
+
+            try {
+                const proyectos = await getProyectos();
+                renderProyectos(proyectos);
+
+                const lineamientos = await getLineamientos();
+                processLineamientos(lineamientos);
+            } catch (err) {
+                console.error("Error loading SharePoint data:", err);
+            }
+        }
+
+        function renderProyectos(proyectos) {
+            const container = document.querySelector('.projects-row');
+            container.innerHTML = '';
+            proyectos.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.innerHTML = `
+                    <div class="project-id">${p.Title || 'N/A'}</div>
+                    <div style="font-weight: 500; margin-bottom: 12px;">${p.NombreProyectos || 'Sin nombre'}</div>
+                    <div class="progress-details" style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px;">
+                        <span>Cumplimiento Global</span>
+                        <span style="font-weight: 600;">${p.Cumplimiento || 0}%</span>
+                    </div>
+                    <div class="progress-container" style="background: #F3F4F6;">
+                        <div class="progress-bar" style="width: ${p.Cumplimiento || 0}%; background: var(--accent-terracotta);"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function processLineamientos(data) {
+            const select = document.getElementById('control-select');
+            select.innerHTML = '<option value="">-- Seleccione un control --</option>';
+
+            data.forEach(item => {
+                const id = item.ID_Control || item.Title;
+                liveControls[id] = {
+                    name: item.NombreControl,
+                    justification: item.Justificacion,
+                    sla: parseInt(item.SLA) || 30,
+                    severity: item.Severidad,
+                    evidence: item.Evidencia
+                };
+
+                const option = document.createElement('option');
+                option.value = id;
+                option.innerText = `${id}: ${item.NombreControl}`;
+                select.appendChild(option);
+            });
+        }
+
+        async function handleRegistrarHallazgo() {
+            const controlId = document.getElementById('control-select').value;
+            const comentarios = document.querySelector('textarea').value;
+            const estado = document.querySelectorAll('select')[1].value;
+
+            if (!controlId) {
+                alert("Seleccione un control primero");
+                return;
+            }
+
+            const data = {
+                Title: `Hallazgo-${controlId}-${new Date().getTime()}`,
+                ID_Control: controlId,
+                Comentarios: comentarios,
+                Estado: estado
+            };
+
+            try {
+                await registrarHallazgo(data);
+                alert("Hallazgo registrado con éxito en SharePoint");
+            } catch (err) {
+                alert("Error al registrar hallazgo: " + err.message);
+            }
+        }
+
+        // Initialize user state on load
+        window.addEventListener('load', () => {
+            checkUser();
+            if (msalInstance.getAllAccounts()[0]) {
+                loadSharePointData();
+            }
+        });
+
+        // Use liveControls if available, fallback to hardcoded (optional, but better to just use live)
+        const controlsMaster = liveControls;
+
+
+        function showSection(sectionId) {
+            // Update Active Nav
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('onclick').includes(sectionId)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update Views
+            const sections = document.querySelectorAll('.view-section');
+            sections.forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(sectionId + '-view').classList.add('active');
+
+            // Optional: Log SharePoint Context
+            console.log(`Switched to ${sectionId}. Mapping data from SharePoint lists: Hallazgos, Proyectos, lineamientos.`);
+        }
+
+        function updateControlInfo() {
+            const select = document.getElementById('control-select');
+            const controlId = select.value;
+            const info = controlsMaster[controlId];
+
+            if (info) {
+                // Smooth transition for details
+                const details = document.querySelector('.control-details');
+                details.style.opacity = '0';
+
+                setTimeout(() => {
+                    document.getElementById('justification-text').innerText = info.justification;
+                    document.getElementById('evidence-guide').innerText = info.evidence;
+
+                    const slaBadge = document.getElementById('sla-badge');
+                    slaBadge.innerText = `${info.sla} Días`;
+                    slaBadge.className = `info-card ${getSeverityClass(info.severity)}`;
+
+                    // Cálculo de vencimiento dinámico
+                    const today = new Date();
+                    const dueDate = new Date();
+                    dueDate.setDate(today.getDate() + info.sla);
+
+                    const timeDiff = dueDate.getTime() - today.getTime();
+                    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                    document.getElementById('due-date').innerHTML = `
+                        ${dueDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        <br><span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">
+                            Quedan ${daysRemaining} días para cumplir SLA
+                        </span>
+                    `;
+
+                    // Update New SLA Tracker UI
+                    updateSLATracker(daysRemaining, dueDate, info.sla, info.severity);
+                    updateEvidenceList(info.evidence);
+
+                    details.style.transition = 'opacity 0.4s ease';
+                    details.style.opacity = '1';
+
+                    // Trigger Technical Advisor logic (internal)
+                    injectAI(controlId, info.severity);
+                }, 200);
+            }
+        }
+
+        function updateSLATracker(days, date, totalSla, severity) {
+            const countEl = document.getElementById('days-count');
+            const circle = document.getElementById('sla-circle');
+            const dateEl = document.getElementById('deadline-date');
+            const badge = document.getElementById('urgent-badge');
+
+            countEl.innerText = days;
+            dateEl.innerText = date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+            // Circle animation
+            const radius = 70;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (Math.min(days, totalSla) / totalSla) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Urgent badge
+            badge.style.display = (severity === 'Crítico' || days <= 2) ? 'block' : 'none';
+        }
+
+        function updateEvidenceList(evidenceString) {
+            const list = document.getElementById('evidence-list');
+            list.innerHTML = ''; // Clear
+
+            const items = evidenceString.split(',').map(s => s.trim());
+            items.forEach((item, index) => {
+                const isVerified = index === 0; // Mock first one as verified
+                const div = document.createElement('div');
+                div.className = `evidence-item ${isVerified ? 'verified' : ''}`;
+                div.innerHTML = `
+                    <div class="evidence-icon">
+                        ${isVerified ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                    </div>
+                    <div class="evidence-info">
+                        <div class="evidence-name">${item}</div>
+                        <div class="evidence-status">${isVerified ? 'Verified via CloudWatch' : 'Pending upload'}</div>
+                    </div>
+                    ${!isVerified ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function getSeverityClass(severity) {
+            const mapping = {
+                'Crítico': 'critical',
+                'Alto': 'high',
+                'Medio': 'medium',
+                'Bajo': 'low'
+            };
+            return mapping[severity] || 'low';
+        }
+
+        function injectAI(controlId, severity) {
+            const activeView = document.querySelector('.view-section.active');
+            const aiMessages = activeView ? activeView.querySelector('.ai-messages') : null;
+            if (!aiMessages) return;
+
+            const chip = document.createElement('div');
+            chip.className = 'suggestion-chip';
+
+            let advice = '';
+            if (severity === 'Crítico') {
+                advice = `<strong>Alerta Prioritaria:</strong> El control ${controlId} debe ser atendido de inmediato. He analizado el entorno y detecté intentos de fuerza bruta recientes que este control mitigaría.`;
+            } else {
+                advice = `<strong>Recomendación Técnica:</strong> La implementación de ${controlId} fortalecerá la postura de GRC. Asegúrese de adjuntar la evidencia en formato PDF para la auditoría.`;
+            }
+
+            chip.innerHTML = advice;
+            chip.style.opacity = '0';
+            chip.style.transform = 'translateY(10px)';
+            aiMessages.prepend(chip);
+
+            setTimeout(() => {
+                chip.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                chip.style.opacity = '1';
+                chip.style.transform = 'translateY(0)';
+            }, 50);
+        }
+    </script>
+</body>
+
+</html>
