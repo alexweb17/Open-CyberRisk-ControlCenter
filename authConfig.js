@@ -5,8 +5,8 @@
  */
 const msalConfig = {
     auth: {
-        clientId: "TU_CLIENT_ID_AQUI", // Reemplazar con el Application (client) ID de Azure
-        authority: "https://login.microsoftonline.com/TU_TENANT_ID_AQUI", // Reemplazar con el Directory (tenant) ID de Azure
+        clientId: "567c8b34-2f6f-4570-9efa-7b6899cca0fd", // Application (client) ID
+        authority: "https://login.microsoftonline.com/4533da84-5b4e-4397-bd68-9cf040c83029", // Directory (tenant) ID
         redirectUri: window.location.origin, // Asegúrate de que esta URL esté registrada en Azure
     },
     cache: {
@@ -22,7 +22,12 @@ const msalConfig = {
  * https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
  */
 const loginRequest = {
-    scopes: ["User.Read", "Sites.Read.All", "Sites.ReadWrite.All"]
+    // Scopes for SharePoint REST API directly
+    scopes: [
+        "User.Read",
+        "https://clarocomec.sharepoint.com/AllSites.Read",
+        "https://clarocomec.sharepoint.com/AllSites.Write"
+    ]
 };
 
 /**
@@ -30,7 +35,7 @@ const loginRequest = {
  * The endpoints for SharePoint and Graph API
  */
 const apiConfig = {
-    sharepointUrl: "https://TU_TENANT.sharepoint.com/sites/TU_SITIO", // Reemplazar con la URL de tu sitio
+    sharepointUrl: "https://clarocomec.sharepoint.com/sites/ReportesdeSeguridad", // Updated URL
     graphMeEndpoint: "https://graph.microsoft.com/v1.0/me",
     graphSitesEndpoint: "https://graph.microsoft.com/v1.0/sites"
 };

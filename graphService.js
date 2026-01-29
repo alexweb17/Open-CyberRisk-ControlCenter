@@ -1,102 +1,118 @@
 /**
- * graphService.js
- * Handles all communication with Microsoft Graph API using MSAL for tokens.
+ * graphService.js (Refactored for SharePoint REST API)
+ * Handles communication directly with SharePoint REST API to avoid Graph permission issues.
  */
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
-async function getGraphToken() {
+async function getToken() {
     const account = msalInstance.getAllAccounts()[0];
-    if (!account) {
-        throw new Error("No user logged in");
-    }
+    if (!account) throw new Error("No user logged in");
 
-    const silentRequest = {
+    const request = {
         ...loginRequest,
         account: account
     };
 
     try {
-        const response = await msalInstance.acquireTokenSilent(silentRequest);
+        const response = await msalInstance.acquireTokenSilent(request);
         return response.accessToken;
     } catch (error) {
-        console.warn("Silent token acquisition failed, attempting popup", error);
-        const response = await msalInstance.acquireTokenPopup(loginRequest);
+        console.warn("Silent token failed, attempting popup", error);
+        const response = await msalInstance.acquireTokenPopup(request);
         return response.accessToken;
     }
 }
 
-async function callGraph(endpoint, method = "GET", data = null) {
-    const token = await getGraphToken();
+async function callSharePoint(endpoint, method = "GET", body = null, extraHeaders = {}) {
+    const token = await getToken();
     const headers = new Headers();
     headers.append("Authorization", `Bearer ${token}`);
-    headers.append("Content-Type", "application/json");
+    headers.append("Accept", "application/json;odata=nometadata"); // cleaner JSON
+    headers.append("Content-Type", "application/json;odata=nometadata");
 
-    const options = {
-        method: method,
-        headers: headers
-    };
-
-    if (data) {
-        options.body = JSON.stringify(data);
+    for (const key in extraHeaders) {
+        headers.append(key, extraHeaders[key]);
     }
+
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
 
     const response = await fetch(endpoint, options);
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Graph API error: ${response.status} ${errorText}`);
+        throw new Error(`SharePoint API error: ${response.status} ${errorText}`);
     }
     return response.json();
 }
 
-/**
- * Helper to get the Site ID from the SharePoint URL
- */
-async function getSiteId() {
-    // Expected URL format: https://tenant.sharepoint.com/sites/SiteName
-    const url = new URL(apiConfig.sharepointUrl);
-    const hostname = url.hostname;
-    const path = url.pathname;
-
-    const endpoint = `${apiConfig.graphSitesEndpoint}/${hostname}:${path}`;
-    const result = await callGraph(endpoint);
-    return result.id;
-}
-
-/**
- * SharePoint Data Fetchers
- */
+// --- Specific SharePoint Operations ---
 
 async function getListItems(listName) {
-    const siteId = await getSiteId();
-    const endpoint = `${apiConfig.graphSitesEndpoint}/${siteId}/lists/${listName}/items?expand=fields`;
-    const result = await callGraph(endpoint);
-    return result.value.map(item => ({
-        id: item.id,
-        ...item.fields
-    }));
+    // Note: Assuming apiConfig.sharepointUrl is the SITE url (e.g. .../sites/ReportesdeSeguridad)
+    const endpoint = `${apiConfig.sharepointUrl}/_api/web/lists/getbytitle('${listName}')/items`;
+    const data = await callSharePoint(endpoint);
+    return data.value; // SharePoint REST v1 with nometadata returns { value: [ ... ] }
+}
+
+async function getRequestDigest() {
+    const endpoint = `${apiConfig.sharepointUrl}/_api/contextinfo`;
+    const data = await callSharePoint(endpoint, "POST");
+    return data.FormDigestValue;
+}
+
+// Helper to find the weird SharePoint Entity Type name (needed for creating items)
+// e.g., SP.Data.Seguridad_x005f_Hallazgos_x005f_RCSListItem
+async function getListItemEntityTypeFullName(listName) {
+    const endpoint = `${apiConfig.sharepointUrl}/_api/web/lists/getbytitle('${listName}')?$select=ListItemEntityTypeFullName`;
+    const data = await callSharePoint(endpoint);
+    return data.ListItemEntityTypeFullName;
 }
 
 async function createListItem(listName, fields) {
-    const siteId = await getSiteId();
-    const endpoint = `${apiConfig.graphSitesEndpoint}/${siteId}/lists/${listName}/items`;
-    const data = { fields: fields };
-    return callGraph(endpoint, "POST", data);
+    const digest = await getRequestDigest();
+    const entityType = await getListItemEntityTypeFullName(listName);
+
+    // Construct payload with metadata type
+    const payload = {
+        "__metadata": { "type": entityType },
+        ...fields
+    };
+
+    const endpoint = `${apiConfig.sharepointUrl}/_api/web/lists/getbytitle('${listName}')/items`;
+
+    // We need verbose for writes usually to be safe, but nometadata might work if strict handled.
+    // Let's stick to the generic callSharePoint which uses nometadata. 
+    // If this fails, we might need to switch to verbose for writes.
+    // However, including 'type' in body often requires verbose or at least strict mode.
+    // Let's try standard approach.
+
+    return callSharePoint(endpoint, "POST", payload, {
+        "X-RequestDigest": digest
+    });
 }
 
-// Specific Domain Functions
+
+// --- Domain Functions (API same as before, implementation changed) ---
+
 async function getProyectos() {
-    return getListItems("Proyectos"); // Asegúrate de que la lista se llame exactamente así
+    return getListItems("Seguridad_Consultorias_Proyectos");
 }
 
 async function getHallazgos() {
-    return getListItems("Hallazgos");
+    return getListItems("Seguridad_Hallazgos_RCS");
 }
 
 async function getLineamientos() {
-    return getListItems("Lineamientos");
+    return getListItems("Seguridad_Base_Lineamientos");
 }
 
 async function registrarHallazgo(hallazgoData) {
-    return createListItem("Hallazgos", hallazgoData);
+    const spData = {
+        Title: hallazgoData.Title,
+        ID_Codigo_Control: hallazgoData.ID_Control,
+        Comentario_Tecnico: hallazgoData.Comentarios,
+        Estado_Implementacion: hallazgoData.Estado
+    };
+    return createListItem("Seguridad_Hallazgos_RCS", spData);
 }
