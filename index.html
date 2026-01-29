@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberRisk Control Center</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>CyberRisk Control Center</h1>
+        <div id="auth">
+            <button id="login">Login</button>
+        </div>
+        <div id="content" style="display: none;">
+            <p>Welcome, <span id="username"></span></p>
+        </div>
+    </div>
+    <script src="https://alcdn.msauth.net/browser/2.14.2/js/msal-browser.min.js"></script>
+    <script src="authConfig.js"></script>
+    <script src="graphService.js"></script>
+    <script>
+        // Basic app logic
+        console.log("App initialized");
+    </script>
+</body>
+</html>
