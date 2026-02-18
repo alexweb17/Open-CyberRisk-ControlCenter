@@ -1,0 +1,9 @@
+File: Seguridad_Base_Lineamientos.xlsx
+Headers: ['Título', 'Codigo_Control', 'Dominio', 'Lineamiento_de_Seguridad', 'Recomendacion_de_Seguridad', 'Severidad', 'Estandar_Referencia', 'Control_Punto_Especifico', 'Estado_Control', 'Justificacion_Riesgo', 'SLA_Dias', 'Guia_Evidencia', 'Tipo de elemento', 'Ruta de acceso']
+--------------------
+File: Seguridad_Consultorias_Proyectos.xlsx
+Headers: ['Título', 'Nombre_Proyecto', 'Area_Solicitante', 'Lider_del_Proyecto', 'Ingeniero_Asignado', 'Fecha de Solicitud', 'Fecha_de_Emision_RCS', 'Estado_Consultoria', 'Link_al_Reporte', 'Tipo de elemento', 'Ruta de acceso']
+--------------------
+File: Seguridad_Hallazgos_RCS.xlsx
+Headers: ['Título', 'ID_Codigo_Control', 'ID_Codigo_Control: Lineamiento_de_Seguridad', 'Codigo_RCS', 'Codigo_RCS: Nombre_Proyecto', 'Codigo_RCS: Fecha_de_Emision_RCS', 'Estado_Implementacion', 'Severidad_Final', 'Fecha_Compromiso', 'Link_Evidencia', 'Comentario_Tecnico', 'Tipo de elemento', 'Ruta de acceso']
+--------------------

@@ -4,6 +4,7 @@ dist/
 .env
 .vscode/
 *.log
+coverage/
 
 # SSL Certificates
 cert.pem
