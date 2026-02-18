@@ -4,3 +4,27 @@ dist/
 .env
 .vscode/
 *.log
+
+# SSL Certificates
+cert.pem
+key.pem
+
+# Agent and IDE files
+.agent/
+.cursorrules
+SGRT.code-workspace
+
+# Large or temporary data files
+headers_utf8.txt
+package-lock.json
+
+# Development/Backups
+app_ccc.js
+app_new.js
+index_new.html
+index_original.html
+inspect_excel.js
+import_controls.js
+check_columns.py
+ListaControles/
+Tablas de Sharepoint/

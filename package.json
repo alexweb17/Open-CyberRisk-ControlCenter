@@ -1,0 +1,28 @@
+{
+  "name": "cyberriskcontrolcenter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexweb17/CyberRiskControlCenter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexweb17/CyberRiskControlCenter/issues"
+  },
+  "homepage": "https://github.com/alexweb17/CyberRiskControlCenter#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.5",
+    "multer": "^2.0.2",
+    "xlsx": "^0.18.5"
+  }
+}
