@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const ControlAsociadoSchema = new mongoose.Schema({
-    control_id: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterControl' },
+    control_id: { type: mongoose.Schema.Types.ObjectId, refPath: 'controles_asociados.tipo_fuente' },
+    tipo_fuente: { type: String, enum: ['MasterControl', 'FrameworkRequirement'], default: 'MasterControl' },
     codigo_control: { type: String, required: true },
     estado_control: {
         type: String,
