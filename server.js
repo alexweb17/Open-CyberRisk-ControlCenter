@@ -16,6 +16,10 @@ const Project = require('./models/Project');
 const RCS = require('./models/RCS');
 const InformeL3 = require('./models/InformeL3');
 const ProcesoNegocio = require('./models/ProcesoNegocio');
+const StrategicObjective = require('./models/StrategicObjective');
+const KRI = require('./models/KRI');
+const Framework = require('./models/Framework');
+const FrameworkRequirement = require('./models/FrameworkRequirement');
 
 const DOMAIN_PREFIXES = {
     "Arquitectura": "ARQ",
@@ -412,6 +416,81 @@ async function getNextRCSCode() {
     return `AIC-SIT-RCS-${String(nextNum).padStart(3, '0')}-${year}`;
 }
 
+// GET Risk Dashboard aggregated data
+app.get('/api/risk-dashboard', async (req, res) => {
+    try {
+        const rcsList = await RCS.find({ deleted: { $ne: true } }).sort({ created_at: -1 });
+        const allControls = await MasterControl.find({});
+        const controlMap = {};
+        allControls.forEach(c => { controlMap[c.codigo_control] = c; });
+
+        const severityOrder = { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1, 'N/A': 0 };
+        const now = new Date();
+
+        // Build enriched list
+        const enriched = rcsList.map(rcs => {
+            const obj = rcs.toObject();
+            obj.controles_detalle = (obj.controles_asociados || []).map(ca => {
+                const mc = controlMap[ca.codigo_control] || {};
+                return { ...ca, dominio: mc.dominio, recomendacion: mc.recomendacion, severidad_control: mc.severidad, sla_dias: mc.sla_dias, estandar_referencia: mc.estandar_referencia };
+            });
+            obj.antiguedad_dias = Math.floor((now - new Date(obj.fecha_registro || obj.created_at)) / (1000 * 60 * 60 * 24));
+            obj.sla_vencido = obj.fecha_limite ? new Date(obj.fecha_limite) < now && obj.estado !== 'Implementado/Mitigado' : false;
+            return obj;
+        });
+
+        // Count incidences per severity
+        const severityCounts = {};
+        enriched.forEach(r => {
+            const sev = r.severidad_maxima || 'N/A';
+            severityCounts[sev] = (severityCounts[sev] || 0) + 1;
+        });
+
+        // Top 5 critical: sort by severity desc, then by incidence count desc
+        const topCritical = [...enriched]
+            .sort((a, b) => {
+                const sevDiff = (severityOrder[b.severidad_maxima] || 0) - (severityOrder[a.severidad_maxima] || 0);
+                if (sevDiff !== 0) return sevDiff;
+                return (severityCounts[b.severidad_maxima] || 0) - (severityCounts[a.severidad_maxima] || 0);
+            })
+            .slice(0, 5);
+
+        // Top 5 oldest: sort by fecha_registro ASC
+        const topOldest = [...enriched]
+            .sort((a, b) => new Date(a.fecha_registro || a.created_at) - new Date(b.fecha_registro || b.created_at))
+            .slice(0, 5);
+
+        // Heat map: severity × estado
+        const heatMap = {};
+        const severities = ['Crítica', 'Alta', 'Media', 'Baja'];
+        const estados = ['Pendiente de Revisión', 'En Curso', 'Implementado/Mitigado'];
+        severities.forEach(s => {
+            heatMap[s] = {};
+            estados.forEach(e => { heatMap[s][e] = 0; });
+        });
+        enriched.forEach(r => {
+            const sev = r.severidad_maxima || 'N/A';
+            const est = r.estado || 'Pendiente de Revisión';
+            if (heatMap[sev] && heatMap[sev][est] !== undefined) {
+                heatMap[sev][est]++;
+            }
+        });
+
+        // KPIs
+        const kpis = {
+            total: enriched.length,
+            criticos: enriched.filter(r => r.severidad_maxima === 'Crítica' || r.severidad_maxima === 'Alta').length,
+            en_mitigacion: enriched.filter(r => r.estado === 'En Curso').length,
+            sla_vencido: enriched.filter(r => r.sla_vencido).length
+        };
+
+        res.json({ kpis, topCritical, topOldest, heatMap, inventory: enriched, severityCounts });
+    } catch (err) {
+        console.error("GET /api/risk-dashboard Error:", err);
+        res.status(500).json({ error: "Error al generar dashboard de riesgos" });
+    }
+});
+
 // GET all RCS entries (excluding soft-deleted)
 app.get('/api/rcs', async (req, res) => {
     try {
@@ -496,17 +575,36 @@ app.get('/api/rcs/:id', async (req, res) => {
         const rcs = await RCS.findById(req.params.id);
         if (!rcs) return res.status(404).json({ error: "RCS no encontrado" });
 
-        // Get full info for each control
-        const controlIds = rcs.controles_asociados.map(c => c.control_id).filter(id => id);
-        const controls = await MasterControl.find({ _id: { $in: controlIds } });
+        // Separate controls by source type
+        const mcIds = [];
+        const frIds = [];
+        rcs.controles_asociados.forEach(c => {
+            if (!c.control_id) return;
+            if (c.tipo_fuente === 'FrameworkRequirement') {
+                frIds.push(c.control_id);
+            } else {
+                mcIds.push(c.control_id);
+            }
+        });
+
+        // Fetch both types in parallel
+        const [masterControls, frameworkReqs] = await Promise.all([
+            MasterControl.find({ _id: { $in: mcIds } }),
+            FrameworkRequirement.find({ _id: { $in: frIds } })
+        ]);
+
         const controlMap = {};
-        controls.forEach(c => { controlMap[c._id.toString()] = c; });
+        masterControls.forEach(c => { controlMap[c._id.toString()] = c; });
+        frameworkReqs.forEach(c => { controlMap[c._id.toString()] = c; });
 
         // Merge control details
-        const enrichedControls = rcs.controles_asociados.map(ca => ({
-            ...ca.toObject(),
-            control_info: controlMap[ca.control_id?.toString()] || null
-        }));
+        const enrichedControls = rcs.controles_asociados.map(ca => {
+            const info = controlMap[ca.control_id?.toString()] || null;
+            return {
+                ...ca.toObject(),
+                control_info: info
+            };
+        });
 
         res.json({
             ...rcs.toObject(),
@@ -520,7 +618,7 @@ app.get('/api/rcs/:id', async (req, res) => {
 // POST add control to RCS
 app.post('/api/rcs/:id/controls', async (req, res) => {
     try {
-        const { control_id, codigo_control } = req.body;
+        const { control_id, codigo_control, tipo_fuente } = req.body;
         const rcs = await RCS.findById(req.params.id);
         if (!rcs) return res.status(404).json({ error: "RCS no encontrado" });
 
@@ -530,6 +628,7 @@ app.post('/api/rcs/:id/controls', async (req, res) => {
 
         rcs.controles_asociados.push({
             control_id,
+            tipo_fuente: tipo_fuente || 'MasterControl',
             codigo_control,
             estado_control: 'Pendiente',
             notas: '',
@@ -816,9 +915,277 @@ app.get('/api/procesos/:id', async (req, res) => {
     try {
         const proceso = await ProcesoNegocio.findById(req.params.id);
         if (!proceso) return res.status(404).json({ error: "Proceso no encontrado" });
-        res.json(proceso);
+
+        // Separate controls by source type
+        const mcIds = [];
+        const frIds = [];
+        if (proceso.controles_asociados) {
+            proceso.controles_asociados.forEach(c => {
+                if (!c.control_id) return;
+                if (c.tipo_fuente === 'FrameworkRequirement') {
+                    frIds.push(c.control_id);
+                } else {
+                    mcIds.push(c.control_id);
+                }
+            });
+        }
+
+        // Fetch both types in parallel
+        const [masterControls, frameworkReqs] = await Promise.all([
+            MasterControl.find({ _id: { $in: mcIds } }),
+            FrameworkRequirement.find({ _id: { $in: frIds } })
+        ]);
+
+        const controlMap = {};
+        masterControls.forEach(c => { controlMap[c._id.toString()] = c; });
+        frameworkReqs.forEach(c => { controlMap[c._id.toString()] = c; });
+
+        // Merge control details
+        const enrichedControls = (proceso.controles_asociados || []).map(ca => {
+            const info = controlMap[ca.control_id?.toString()] || null;
+            return {
+                ...ca.toObject(),
+                control_info: info
+            };
+        });
+
+        res.json({
+            ...proceso.toObject(),
+            controles_asociados: enrichedControls
+        });
     } catch (err) {
         res.status(500).json({ error: "Error al obtener proceso", details: err.message });
+    }
+});
+
+// 4.6 Governance API Endpoints
+
+// Strategic Objectives
+app.get('/api/governance/objectives', async (req, res) => {
+    try {
+        const objectives = await StrategicObjective.find().sort({ created_at: -1 });
+        res.json(objectives);
+    } catch (err) {
+        res.status(500).json({ error: "Error al recuperar objetivos estratégicos" });
+    }
+});
+
+app.post('/api/governance/objectives', async (req, res) => {
+    try {
+        console.log("Creando Objetivo:", req.body);
+        const obj = new StrategicObjective(req.body);
+        await obj.save();
+        res.status(201).json(obj);
+    } catch (err) {
+        console.error("Error al crear objetivo:", err.message);
+        res.status(400).json({ error: "Error al crear objetivo", details: err.message });
+    }
+});
+
+app.put('/api/governance/objectives/:id', async (req, res) => {
+    try {
+        const obj = await StrategicObjective.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(obj);
+    } catch (err) {
+        res.status(400).json({ error: "Error al actualizar objetivo" });
+    }
+});
+
+app.delete('/api/governance/objectives/:id', async (req, res) => {
+    try {
+        await StrategicObjective.findByIdAndDelete(req.params.id);
+        res.json({ message: "Objetivo eliminado" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al eliminar objetivo" });
+    }
+});
+
+// KRIs (Key Risk Indicators)
+app.get('/api/governance/kris', async (req, res) => {
+    try {
+        const kris = await KRI.find().populate('objective_id').sort({ name: 1 });
+        res.json(kris);
+    } catch (err) {
+        res.status(500).json({ error: "Error al recuperar KRIs" });
+    }
+});
+
+app.post('/api/governance/kris', async (req, res) => {
+    try {
+        console.log("Creando KRI:", req.body);
+        const kri = new KRI(req.body);
+        await kri.save();
+        res.status(201).json(kri);
+    } catch (err) {
+        console.error("Error al crear KRI:", err.message);
+        res.status(400).json({ error: "Error al crear KRI", details: err.message });
+    }
+});
+
+app.put('/api/governance/kris/:id', async (req, res) => {
+    try {
+        const kri = await KRI.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(kri);
+    } catch (err) {
+        res.status(400).json({ error: "Error al actualizar KRI" });
+    }
+});
+
+app.delete('/api/governance/kris/:id', async (req, res) => {
+    try {
+        await KRI.findByIdAndDelete(req.params.id);
+        res.json({ message: "KRI eliminado" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al eliminar KRI" });
+    }
+});
+
+// GET executive summary for Governance Dashboard
+app.get('/api/governance/executive-summary', async (req, res) => {
+    try {
+        // Calculate Total Financial Exposure from Business Processes (ALE)
+        const procesos = await ProcesoNegocio.find({ deleted: { $ne: true } });
+        const totalALE = procesos.reduce((sum, p) => sum + (p.ale_expectativa_perdida || 0), 0);
+
+        // Count KRIs by state (Critical, Warning, Normal)
+        const kris = await KRI.find();
+        const kriStats = {
+            total: kris.length,
+            critical: kris.filter(k => k.current_value >= k.threshold_critical).length,
+            warning: kris.filter(k => k.current_value >= k.threshold_warning && k.current_value < k.threshold_critical).length,
+            normal: kris.filter(k => k.current_value < k.threshold_warning).length
+        };
+
+        // Objectives count
+        const objectivesCount = await StrategicObjective.countDocuments();
+
+        res.json({
+            totalFinancialExposure: totalALE,
+            kriStatus: kriStats,
+            strategicObjectivesCount: objectivesCount,
+            lastUpdated: new Date()
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Error al generar resumen ejecutivo", details: err.message });
+    }
+});
+
+// --- RCS BULK CONTROLS ---
+
+// POST bulk-add controls to RCS from a source
+app.post('/api/rcs/:id/bulk-controls', async (req, res) => {
+    try {
+        const { source, framework_id } = req.body;
+        const rcs = await RCS.findById(req.params.id);
+        if (!rcs) return res.status(404).json({ error: "RCS no encontrado" });
+
+        let controlsToAdd = [];
+
+        if (source === 'marco_base') {
+            const allControls = await MasterControl.find().sort({ codigo_control: 1 });
+            controlsToAdd = allControls.map(c => ({
+                control_id: c._id,
+                tipo_fuente: 'MasterControl',
+                codigo_control: c.codigo_control,
+                estado_control: 'Pendiente',
+                notas: '',
+                fecha_agregado: new Date()
+            }));
+        } else if (source === 'framework' && framework_id) {
+            const requirements = await FrameworkRequirement.find({ framework_id }).sort({ code: 1 });
+            controlsToAdd = requirements.map(r => ({
+                control_id: r._id,
+                tipo_fuente: 'FrameworkRequirement',
+                codigo_control: r.code,
+                estado_control: 'Pendiente',
+                notas: '',
+                fecha_agregado: new Date()
+            }));
+        } else {
+            return res.status(400).json({ error: "Fuente inválida. Use 'marco_base' o 'framework' con framework_id." });
+        }
+
+        // Filter out already-existing controls
+        const existingCodes = new Set(rcs.controles_asociados.map(c => c.codigo_control));
+        const newControls = controlsToAdd.filter(c => !existingCodes.has(c.codigo_control));
+
+        if (newControls.length === 0) {
+            return res.json({ message: "Todos los controles ya existen en este RCS", added: 0, data: rcs });
+        }
+
+        rcs.controles_asociados.push(...newControls);
+        await rcs.save();
+
+        await new AuditLog({
+            action: 'BULK_ADD_CONTROLS',
+            entity: 'RCS',
+            entityId: rcs._id,
+            details: { codigo: rcs.codigo_rcs, source, count: newControls.length }
+        }).save();
+
+        res.json({ message: `${newControls.length} controles agregados`, added: newControls.length, data: rcs });
+    } catch (err) {
+        console.error("POST /api/rcs/:id/bulk-controls Error:", err);
+        res.status(400).json({ error: "Error al cargar controles masivamente", details: err.message });
+    }
+});
+
+// GET search framework requirements (for autocomplete in RCS)
+app.get('/api/framework-requirements/search', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        const frameworkId = req.query.framework_id;
+        const searchRegex = new RegExp(query, 'i');
+
+        const filter = {
+            $or: [
+                { code: searchRegex },
+                { domain: searchRegex },
+                { requirement: searchRegex },
+                { guidance: searchRegex }
+            ]
+        };
+        if (frameworkId) {
+            filter.framework_id = frameworkId;
+        }
+
+        const requirements = await FrameworkRequirement.find(filter).sort({ code: 1 }).limit(10);
+
+        // Enrich with framework name
+        const frameworkIds = [...new Set(requirements.map(r => r.framework_id.toString()))];
+        const frameworks = await Framework.find({ _id: { $in: frameworkIds } });
+        const fwMap = {};
+        frameworks.forEach(f => { fwMap[f._id.toString()] = f.name; });
+
+        const enriched = requirements.map(r => ({
+            ...r.toObject(),
+            framework_name: fwMap[r.framework_id.toString()] || 'Desconocido'
+        }));
+
+        res.json(enriched);
+    } catch (err) {
+        console.error("GET /api/framework-requirements/search Error:", err);
+        res.status(500).json({ error: "Error en búsqueda de requisitos" });
+    }
+});
+
+// --- BIBLIOTECA DE MARCOS REGULATORIOS ---
+
+app.get('/api/frameworks', async (req, res) => {
+    try {
+        const frameworks = await Framework.find().sort({ name: 1 });
+        res.json(frameworks);
+    } catch (err) {
+        res.status(500).json({ error: "Error al recuperar marcos regulatorios" });
+    }
+});
+
+app.get('/api/frameworks/:id/requirements', async (req, res) => {
+    try {
+        const requirements = await FrameworkRequirement.find({ framework_id: req.params.id }).sort({ code: 1 });
+        res.json(requirements);
+    } catch (err) {
+        res.status(500).json({ error: "Error al recuperar requisitos del marco" });
     }
 });
 
