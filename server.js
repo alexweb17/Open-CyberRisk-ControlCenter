@@ -8,8 +8,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const User = require('./models/User');
 const MasterControl = require('./models/MasterControl');
 const AuditLog = require('./models/AuditLog');
 const Project = require('./models/Project');
@@ -98,6 +102,165 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+/**
+ * 4. SOBERAN AUTHENTICATION & AUTHORIZATION (JWT + RBAC)
+ */
+
+// JWT Helper: Create and sign token
+const signToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN
+    });
+};
+
+// Middleware: Protect routes with JWT verification
+async function protect(req, res, next) {
+    let token;
+
+    // 1. Check if token exists in headers
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+        return res.status(401).json({ error: "No has iniciado sesión. Por favor, ingresa para obtener acceso." });
+    }
+
+    try {
+        // 2. Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // 3. Check if user still exists
+        const currentUser = await User.findById(decoded.id);
+        if (!currentUser) {
+            return res.status(401).json({ error: "El usuario perteneciente a este token ya no existe." });
+        }
+
+        // 4. Grant access to protected route
+        req.user = currentUser;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: "Token inválido o expirado." });
+    }
+}
+
+// Middleware: restrictTo(roles) for RBAC
+function restrictTo(...roles) {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: "Permisos Denegados",
+                message: `Tu rol (${req.user.role}) no tiene autorización para esta acción.`
+            });
+        }
+        next();
+    };
+}
+
+// Legacy alias for checkPerms (backwards compatibility if needed, but we should use restrictTo)
+const checkPerms = (allowedRoles) => restrictTo(...allowedRoles);
+
+// --- AUTH ENDPOINTS ---
+
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        // Only allow first user or admin to create others if needed
+        const newUser = await User.create({
+            name: req.body.name,
+            email: req.body.email,
+            password: req.body.password,
+            role: req.body.role || 'engineer'
+        });
+
+        const token = signToken(newUser._id);
+
+        // Remove password from output
+        newUser.password = undefined;
+
+        res.status(201).json({
+            status: 'success',
+            token,
+            data: { user: newUser }
+        });
+    } catch (err) {
+        console.error("[SIGNUP ERROR]", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // 1. Check if email and password exist
+        if (!email || !password) {
+            return res.status(400).json({ error: "Por favor, proporciona email y contraseña." });
+        }
+
+        // 2. Find user & check password (select password field explicitly because select:false)
+        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({ error: "Email o contraseña incorrectos." });
+        }
+
+        // 3. Update last login
+        user.lastLogin = Date.now();
+        await user.save({ validateBeforeSave: false });
+
+        // 4. Send token
+        const token = signToken(user._id);
+        user.password = undefined;
+
+        res.json({
+            status: 'success',
+            token,
+            user
+        });
+    } catch (err) {
+        console.error("[LOGIN ERROR]", err);
+        res.status(500).json({ error: "Error en el inicio de sesión." });
+    }
+});
+
+app.get('/api/me', protect, (req, res) => {
+    res.json(req.user);
+});
+
+// Self-service password change (any authenticated user)
+app.patch('/api/me/password', protect, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Se requiere la contraseña actual y la nueva contraseña.' });
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+        }
+
+        // Fetch user with password field (select: false by default)
+        const user = await User.findById(req.user._id).select('+password');
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        // Verify current password
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: 'Contraseña actualizada exitosamente.' });
+    } catch (err) {
+        console.error('PATCH /api/me/password Error:', err);
+        res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+    }
+});
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
@@ -123,6 +286,13 @@ const upload = multer({
     storage,
     fileFilter,
     limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 } // 5MB default
+});
+
+// --- GLOBAL AUTHENTICATION FOR ALL API ROUTES ---
+app.use('/api', (req, res, next) => {
+    // Exclude auth routes from global protect
+    if (req.path.startsWith('/auth')) return next();
+    protect(req, res, next);
 });
 
 // 4. Endpoints
@@ -169,7 +339,7 @@ app.get('/api/master-controls/search', async (req, res) => {
 });
 
 // Agregar nuevo control maestro
-app.post('/api/master-controls', async (req, res) => {
+app.post('/api/master-controls', checkPerms(['security_manager', 'admin']), async (req, res) => {
     try {
         // Auto-generate code if not provided
         if (!req.body.codigo_control && req.body.dominio) {
@@ -195,7 +365,7 @@ app.post('/api/master-controls', async (req, res) => {
 });
 
 // Actualizar control maestro
-app.put('/api/master-controls/:id', async (req, res) => {
+app.put('/api/master-controls/:id', checkPerms(['security_manager', 'admin']), async (req, res) => {
     try {
         const existingControl = await MasterControl.findById(req.params.id);
         if (!existingControl) return res.status(404).json({ error: "Control no encontrado" });
@@ -230,7 +400,7 @@ app.put('/api/master-controls/:id', async (req, res) => {
 });
 
 // Eliminar control maestro
-app.delete('/api/master-controls/:id', async (req, res) => {
+app.delete('/api/master-controls/:id', checkPerms(['security_manager', 'admin']), async (req, res) => {
     try {
         const deletedControl = await MasterControl.findByIdAndDelete(req.params.id);
         if (!deletedControl) return res.status(404).json({ error: "Control no encontrado" });
@@ -372,7 +542,7 @@ app.put('/api/projects/:id', async (req, res) => {
 });
 
 // DELETE project
-app.delete('/api/projects/:id', async (req, res) => {
+app.delete('/api/projects/:id', checkPerms(['security_manager', 'admin']), async (req, res) => {
     try {
         const deletedProject = await Project.findByIdAndDelete(req.params.id);
         if (!deletedProject) return res.status(404).json({ error: "Proyecto no encontrado" });
@@ -694,7 +864,7 @@ app.post('/api/upload/:id', upload.array('files', 5), async (req, res) => {
     }
 });
 
-// ============ INFORMES L3 ENDPOINTS ============
+// ============ INFORMES CRÍTICOS L3 ENDPOINTS ============
 
 // Generate InformeL3 code: AIC-SIT-APP-XXX-YY
 async function getNextInformeL3Code() {
@@ -718,13 +888,13 @@ async function getNextInformeL3Code() {
     return `AIC-SIT-APP-${String(nextNum).padStart(3, '0')}-${year}`;
 }
 
-// GET all Informes L3 (excluding soft-deleted)
+// GET all Informes Críticos L3 (excluding soft-deleted)
 app.get('/api/informesl3', async (req, res) => {
     try {
         const informes = await InformeL3.find({ deleted: { $ne: true } }).sort({ created_at: -1 });
         res.json(informes);
     } catch (err) {
-        res.status(500).json({ error: "Error al recuperar informes L3" });
+        res.status(500).json({ error: "Error al recuperar informes críticos L3" });
     }
 });
 
@@ -745,10 +915,10 @@ app.post('/api/informesl3', async (req, res) => {
             details: { codigo: newInforme.codigo_informe, titulo: newInforme.titulo }
         }).save();
 
-        res.status(201).json({ message: "Informe L3 creado", data: newInforme });
+        res.status(201).json({ message: "Informe Crítico L3 creado", data: newInforme });
     } catch (err) {
         console.error("POST /api/informesl3 Error:", err);
-        res.status(400).json({ error: "Error al crear informe L3", details: err.message });
+        res.status(400).json({ error: "Error al crear informe crítico L3", details: err.message });
     }
 });
 
@@ -760,7 +930,7 @@ app.put('/api/informesl3/:id', async (req, res) => {
             { ...req.body, updated_at: Date.now() },
             { new: true, runValidators: true }
         );
-        if (!updated) return res.status(404).json({ error: "Informe L3 no encontrado" });
+        if (!updated) return res.status(404).json({ error: "Informe Crítico L3 no encontrado" });
 
         await new AuditLog({
             action: 'UPDATE',
@@ -769,9 +939,9 @@ app.put('/api/informesl3/:id', async (req, res) => {
             details: { codigo: updated.codigo_informe, estado: updated.estado_atencion }
         }).save();
 
-        res.json({ message: "Informe L3 actualizado", data: updated });
+        res.json({ message: "Informe Crítico L3 actualizado", data: updated });
     } catch (err) {
-        res.status(400).json({ error: "Error al actualizar informe L3", details: err.message });
+        res.status(400).json({ error: "Error al actualizar informe crítico L3", details: err.message });
     }
 });
 
@@ -783,7 +953,7 @@ app.delete('/api/informesl3/:id', async (req, res) => {
             { deleted: true, deleted_at: new Date() },
             { new: true }
         );
-        if (!informe) return res.status(404).json({ error: "Informe L3 no encontrado" });
+        if (!informe) return res.status(404).json({ error: "Informe Crítico L3 no encontrado" });
 
         await new AuditLog({
             action: 'SOFT_DELETE',
@@ -792,9 +962,9 @@ app.delete('/api/informesl3/:id', async (req, res) => {
             details: { codigo: informe.codigo_informe, deleted_at: informe.deleted_at }
         }).save();
 
-        res.json({ message: "Informe L3 eliminado", codigo: informe.codigo_informe });
+        res.json({ message: "Informe Crítico L3 eliminado", codigo: informe.codigo_informe });
     } catch (err) {
-        res.status(500).json({ error: "Error al eliminar informe L3", details: err.message });
+        res.status(500).json({ error: "Error al eliminar informe crítico L3", details: err.message });
     }
 });
 
@@ -802,10 +972,10 @@ app.delete('/api/informesl3/:id', async (req, res) => {
 app.get('/api/informesl3/:id', async (req, res) => {
     try {
         const informe = await InformeL3.findById(req.params.id);
-        if (!informe) return res.status(404).json({ error: "Informe L3 no encontrado" });
+        if (!informe) return res.status(404).json({ error: "Informe Crítico L3 no encontrado" });
         res.json(informe);
     } catch (err) {
-        res.status(500).json({ error: "Error al obtener informe L3", details: err.message });
+        res.status(500).json({ error: "Error al obtener informe crítico L3", details: err.message });
     }
 });
 
@@ -1043,11 +1213,56 @@ app.delete('/api/governance/kris/:id', async (req, res) => {
 // GET executive summary for Governance Dashboard
 app.get('/api/governance/executive-summary', async (req, res) => {
     try {
-        // Calculate Total Financial Exposure from Business Processes (ALE)
         const procesos = await ProcesoNegocio.find({ deleted: { $ne: true } });
         const totalALE = procesos.reduce((sum, p) => sum + (p.ale_expectativa_perdida || 0), 0);
 
-        // Count KRIs by state (Critical, Warning, Normal)
+        // --- Risk Distribution by Level ---
+        const riskDistribution = { 'Crítico': 0, 'Alto': 0, 'Medio': 0, 'Bajo': 0 };
+        procesos.forEach(p => {
+            const level = p.nivel_riesgo || 'Medio';
+            if (riskDistribution[level] !== undefined) riskDistribution[level]++;
+        });
+
+        // --- Program Maturity (processes by state) ---
+        const programMaturity = {
+            'Identificado': 0, 'En Evaluación': 0, 'En Tratamiento': 0, 'Monitoreado': 0, 'Cerrado': 0
+        };
+        procesos.forEach(p => {
+            const state = p.estado || 'Identificado';
+            if (programMaturity[state] !== undefined) programMaturity[state]++;
+        });
+
+        // --- ALE by Area ---
+        const aleByArea = {};
+        procesos.forEach(p => {
+            const area = p.area_responsable || 'Sin Asignar';
+            aleByArea[area] = (aleByArea[area] || 0) + (p.ale_expectativa_perdida || 0);
+        });
+
+        // --- ALE by Risk Level ---
+        const aleByRiskLevel = { 'Crítico': 0, 'Alto': 0, 'Medio': 0, 'Bajo': 0 };
+        procesos.forEach(p => {
+            const level = p.nivel_riesgo || 'Medio';
+            if (aleByRiskLevel[level] !== undefined) {
+                aleByRiskLevel[level] += (p.ale_expectativa_perdida || 0);
+            }
+        });
+
+        // --- Top 5 processes by ALE ---
+        const topProcesses = procesos
+            .filter(p => (p.ale_expectativa_perdida || 0) > 0)
+            .sort((a, b) => b.ale_expectativa_perdida - a.ale_expectativa_perdida)
+            .slice(0, 5)
+            .map(p => ({
+                nombre: p.nombre_proceso,
+                area: p.area_responsable,
+                ale: p.ale_expectativa_perdida,
+                nivel_riesgo: p.nivel_riesgo,
+                estado: p.estado,
+                impacto: p.impacto_negocio
+            }));
+
+        // --- KRI stats ---
         const kris = await KRI.find();
         const kriStats = {
             total: kris.length,
@@ -1056,11 +1271,16 @@ app.get('/api/governance/executive-summary', async (req, res) => {
             normal: kris.filter(k => k.current_value < k.threshold_warning).length
         };
 
-        // Objectives count
         const objectivesCount = await StrategicObjective.countDocuments();
 
         res.json({
             totalFinancialExposure: totalALE,
+            totalProcesses: procesos.length,
+            riskDistribution,
+            programMaturity,
+            aleByArea,
+            aleByRiskLevel,
+            topProcesses,
             kriStatus: kriStats,
             strategicObjectivesCount: objectivesCount,
             lastUpdated: new Date()
@@ -1189,21 +1409,102 @@ app.get('/api/frameworks/:id/requirements', async (req, res) => {
     }
 });
 
-// 5. Servidor HTTPS
+// --- USER MANAGEMENT (ADMIN ONLY) ---
+
+app.get('/api/users', checkPerms(['admin']), async (req, res) => {
+    try {
+        const users = await User.find().sort({ email: 1 });
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: "Error al listar usuarios" });
+    }
+});
+
+app.patch('/api/users/:id/role', checkPerms(['admin']), async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!['admin', 'security_manager', 'engineer'].includes(role)) {
+            return res.status(400).json({ error: "Rol inválido" });
+        }
+
+        await User.findByIdAndUpdate(req.params.id, { role });
+        res.json({ message: "Rol actualizado correctamente" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al actualizar rol" });
+    }
+});
+
+// Create User (Admin Only)
+app.post('/api/users', checkPerms(['admin']), async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+        const newUser = await User.create({ name, email, password, role });
+        newUser.password = undefined;
+        res.status(201).json({ status: 'success', data: { user: newUser } });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete User (Admin Only)
+app.delete('/api/users/:id', checkPerms(['admin']), async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+        res.json({ message: "Usuario eliminado correctamente" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al eliminar usuario" });
+    }
+});
+
+// Update User (Admin Only)
+app.patch('/api/users/:id', checkPerms(['admin']), async (req, res) => {
+    try {
+        const { name, email, role, password } = req.body;
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        if (name) user.name = name;
+        if (email) user.email = email.toLowerCase();
+        if (role) user.role = role;
+        if (password && password.trim().length >= 8) {
+            user.password = password;
+        }
+
+        await user.save();
+        res.json({ message: "Usuario actualizado correctamente", user });
+    } catch (err) {
+        console.error("PATCH /api/users/:id Error:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// 5. Servidor con Fallback HTTPS/HTTP
 const https = require('https');
+const http = require('http');
 const PORT = process.env.PORT || 3000;
 
-try {
-    const options = {
-        key: fs.readFileSync(path.join(__dirname, 'key.pem')),
-        cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
-    };
+const startServer = () => {
+    try {
+        const options = {
+            key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+            cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
+        };
 
-    https.createServer(options, app).listen(PORT, () => {
-        console.log(`Backend CCC Hardened activo en: https://localhost:${PORT}`);
-    });
-} catch (err) {
-    console.error("Error al iniciar servidor HTTPS. Asegúrate de que key.pem y cert.pem existan:", err.message);
-    // Fallback a HTTP si es necesario o detener
-    process.exit(1);
-}
+        https.createServer(options, app).listen(PORT, () => {
+            console.log(`Backend CCC Hardened activo en: https://localhost:${PORT}`);
+        });
+    } catch (err) {
+        console.warn("⚠️  Aviso: No se pudo iniciar HTTPS (Certificados faltantes o inválidos). Iniciando en modo HTTP estándar.");
+        console.warn("Detalle:", err.message);
+
+        http.createServer(app).listen(PORT, () => {
+            console.log(`Servidor CCC disponible en modo estándar: http://localhost:${PORT}`);
+        });
+    }
+};
+
+startServer();

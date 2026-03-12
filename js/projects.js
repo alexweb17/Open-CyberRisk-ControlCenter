@@ -3,10 +3,10 @@ let allProjects = [];
 
 async function loadProjects() {
     try {
-        const resp = await fetch('/api/projects');
+        const resp = await cyberFetch('/api/projects');
         allProjects = await resp.json();
 
-        // Ensure RCS data is loaded before rendering projects to calculate metrics
+        // Ensure Consultoría data is loaded before rendering projects to calculate metrics
         if (typeof rcsData === 'undefined' || Object.keys(rcsData || {}).length === 0) {
             await loadRCSData();
         }
@@ -52,7 +52,7 @@ function renderProjectCards(projects) {
         // Calculate metrics from RCS that match this project's code (expediente)
         const projectRCS = Object.values(rcsData || {}).filter(r => r.expediente === p.codigo_proyecto);
 
-        let stats = { Pendiente: 0, 'En Curso': 0, 'Implementado/Mitigado': 0, Aceptado: 0 };
+        let stats = { Pendiente: 0, 'En Curso': 0, Mitigados: 0, Aceptado: 0 };
         let totalControls = 0;
         let mitigatedCount = 0;
 
@@ -63,78 +63,85 @@ function renderProjectCards(projects) {
 
                 if (c.estado_control === 'Pendiente') stats.Pendiente++;
                 else if (c.estado_control === 'En Mitigación') stats['En Curso']++;
-                else if (c.estado_control === 'Mitigado') stats['Implementado/Mitigado']++;
+                else if (c.estado_control === 'Mitigado') stats.Mitigados++;
                 else if (c.estado_control === 'Aceptado') stats.Aceptado++;
             });
         });
 
-        const compliance = totalControls > 0 ? Math.round((mitigatedCount / totalControls) * 100) : 0;
-        const barColor = compliance >= 70 ? 'var(--accent-terracotta)' :
+        const p_pendientes = stats.Pendiente || p.hallazgos_abiertos || 0;
+        const p_mitigados = stats.Mitigados || p.hallazgos_mitigados || 0;
+
+        const compliance = totalControls > 0 ? Math.round((mitigatedCount / totalControls) * 100) : (p.cumplimiento_global || 0);
+        const barColor = compliance >= 70 ? '#059669' :
             compliance >= 40 ? '#F59E0B' : 'var(--risk-critical)';
-        const textColor = compliance < 40 ? 'color: var(--risk-critical);' : '';
-        const fechaSol = p.fecha_solicitud ? new Date(p.fecha_solicitud).toLocaleDateString() : 'N/A';
+        const textColor = compliance >= 70 ? 'color: #059669;' :
+            compliance >= 40 ? 'color: #F59E0B;' : 'color: var(--risk-critical);';
+        const fechaSol = p.fecha_solicitud ? new Date(p.fecha_solicitud).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+
+        // Status badge class
+        const estadoLower = (p.estado || 'Activo').toLowerCase();
+        const statusClass = estadoLower === 'activo' ? 'status-activo' :
+            estadoLower === 'cerrado' ? 'status-cerrado' : 'status-inactivo';
 
         return `
-        <div class="project-card glass" style="position: relative; min-width: 280px; text-align: center;">
-            <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
-                <button data-project-action="edit" data-project-id="${p._id}" 
-                    style="background: none; border: 1px solid var(--border-color); padding: 6px; border-radius: 6px; cursor: pointer;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="project-card glass" style="position: relative;">
+            <div class="action-btns">
+                <button class="action-btn" data-project-action="edit" data-project-id="${p._id}" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"/>
                     </svg>
                 </button>
-                <button data-project-action="delete" data-project-id="${p._id}" data-project-name="${p.nombre}"
-                    style="background: none; border: 1px solid #FEE2E2; padding: 6px; border-radius: 6px; cursor: pointer; color: #B91C1C;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="action-btn delete" data-project-action="delete" data-project-id="${p._id}" data-project-name="${p.nombre}" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                     </svg>
                 </button>
             </div>
-            <div class="project-id" style="margin-bottom: 4px;">${p.codigo_proyecto}</div>
-            <div style="font-weight: 700; margin-bottom: 4px; font-size: 1.1rem; color: var(--text-primary);">${p.nombre}</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500;">
-                ${p.area || 'Sin área asignada'}
-            </div>
-            
-            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">
-                📅 Solicitud: <span style="font-weight: 600; color: var(--text-primary);">${fechaSol}</span>
-            </div>
 
-            <div class="progress-details" style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px;">
-                <span>Cumplimiento Global</span>
-                <span style="font-weight: 700; ${textColor}">${compliance}%</span>
-            </div>
-            <div class="progress-container" style="background: #F3F4F6; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
-                <div class="progress-bar" style="width: ${compliance}%; background: ${barColor}; height: 100%; transition: width 0.5s ease;"></div>
-            </div>
+            <div class="project-card-inner">
+                <div class="card-header">
+                    <div>
+                        <div class="project-code">${p.codigo_proyecto}</div>
+                        <div class="project-title-row">
+                            <h3 class="project-title">${p.nombre}</h3>
+                            <span class="project-status-badge ${statusClass}">${p.estado || 'Activo'}</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase;">Pendientes</div>
-                    <div style="font-weight: 700; color: var(--risk-critical);">${stats.Pendiente}</div>
+                <div class="project-meta">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <span class="meta-value">${p.area || 'Sin área'}</span>
+                    <span class="meta-separator">·</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span>${fechaSol}</span>
+                    <span class="meta-separator">·</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span class="meta-value">${p.lider_proyecto || 'Sin asignar'}</span>
                 </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase;">En Curso</div>
-                    <div style="font-weight: 700; color: #F59E0B;">${stats['En Curso']}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase;">Mitigados</div>
-                    <div style="font-weight: 700; color: #10B981;">${stats['Implementado/Mitigado']}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase;">Aceptados</div>
-                    <div style="font-weight: 700; color: #6B7280;">${stats.Aceptado}</div>
-                </div>
-            </div>
 
-            <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border-color); padding-top: 12px;">
-                <div style="margin-bottom: 2px;">👤 <strong>Líder:</strong> ${p.lider_proyecto || 'Sin asignar'}</div>
-                <div>🔧 <strong>Ingeniero:</strong> ${p.ingeniero_asignado || 'Sin asignar'}</div>
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span class="progress-label">Cumplimiento Global</span>
+                        <span class="progress-value" style="${textColor}">${compliance}%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: ${compliance}%; background: ${barColor};"></div>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <span class="stat-pill pill-pendientes">${p_pendientes} Pendientes</span>
+                    <span class="stat-pill pill-encurso">${stats['En Curso']} En Curso</span>
+                    <span class="stat-pill pill-mitigados">${p_mitigados} Mitigados</span>
+                    <span class="stat-pill pill-aceptados">${stats.Aceptado} Aceptados</span>
+                </div>
             </div>
         </div>`;
     }).join('');
 }
+
 
 function openProjectModal(projectId = null) {
     const modal = document.getElementById('project-modal');
@@ -185,7 +192,7 @@ async function handleProjectSubmit(e) {
         const url = projectId ? `/api/projects/${projectId}` : '/api/projects';
         const method = projectId ? 'PUT' : 'POST';
 
-        const resp = await fetch(url, {
+        const resp = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

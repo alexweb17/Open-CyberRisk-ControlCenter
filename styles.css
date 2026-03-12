@@ -596,11 +596,247 @@ textarea:focus {
     background: #c2664a;
 }
 
-.label {
-    color: var(--text-secondary);
-    font-size: 0.75rem;
+/* ============================================
+   PROJECT CARDS — Modern Minimalist Design
+   ============================================ */
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.project-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    border-left: 4px solid var(--accent-terracotta);
+    overflow: hidden;
+}
+
+.project-card-inner {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.07);
+}
+
+/* -- Header: code + title + status badge -- */
+.project-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0;
+}
+
+.project-card .project-code {
+    font-size: 0.7rem;
     font-weight: 600;
-    margin-bottom: 6px;
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+}
+
+.project-card .project-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.project-card .project-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.project-card .project-status-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.project-card .project-status-badge.status-activo {
+    background: #ECFDF5;
+    color: #059669;
+}
+
+.project-card .project-status-badge.status-inactivo {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+.project-card .project-status-badge.status-cerrado {
+    background: #EFF6FF;
+    color: #2563EB;
+}
+
+/* -- Metadata row: area · date · leader -- */
+.project-card .project-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    line-height: 1.5;
+}
+
+.project-card .project-meta svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.project-card .meta-separator {
+    color: var(--border-color);
+    font-weight: 300;
+    margin: 0 2px;
+}
+
+.project-card .meta-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* -- Compliance progress bar -- */
+.project-card .progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.project-card .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.project-card .progress-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+}
+
+.project-card .progress-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.project-card .progress-track {
+    background: #F3F4F6;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.project-card .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -- Stats pills row -- */
+.project-card .stats-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.project-card .stat-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.15s ease;
+}
+
+.project-card .stat-pill:hover {
+    transform: scale(1.05);
+}
+
+.project-card .stat-pill.pill-pendientes {
+    background: #FEF2F2;
+    color: var(--risk-critical);
+}
+
+.project-card .stat-pill.pill-encurso {
+    background: #FFFBEB;
+    color: var(--risk-high);
+}
+
+.project-card .stat-pill.pill-mitigados {
+    background: #ECFDF5;
+    color: #059669;
+}
+
+.project-card .stat-pill.pill-aceptados {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+/* -- Action buttons (hover reveal) -- */
+.project-card .action-btns {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.project-card:hover .action-btns {
+    opacity: 1;
+}
+
+.project-card .action-btn {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.project-card .action-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.project-card .action-btn.delete {
+    color: #ef4444;
+}
+
+.project-card .action-btn.delete:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
 }
