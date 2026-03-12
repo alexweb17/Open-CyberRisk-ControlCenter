@@ -1,50 +1,42 @@
 let allFrameworks = [];
 let currentRequirements = [];
 
-const fwColors = {
-    'iso': { accent: '#3B82F6', bg: '#EFF6FF', text: '#1E40AF', emoji: '🔒' },
-    'nist': { accent: '#10B981', bg: '#ECFDF5', text: '#065F46', emoji: '🛡️' },
-    'pci': { accent: '#6366F1', bg: '#EEF2FF', text: '#3730A3', emoji: '💳' },
-    'soc': { accent: '#F59E0B', bg: '#FFFBEB', text: '#92400E', emoji: '☁️' },
-    'owasp': { accent: '#D83B01', bg: '#FDF2EB', text: '#7A2201', emoji: '🌐' }
-};
-
-function getFrameworkTheme(name) {
-    const n = name.toLowerCase();
-    if (n.includes('iso')) return fwColors.iso;
-    if (n.includes('nist')) return fwColors.nist;
-    if (n.includes('pci')) return fwColors.pci;
-    if (n.includes('soc')) return fwColors.soc;
-    if (n.includes('owasp')) return fwColors.owasp;
-    return fwColors.iso;
-}
-
 async function loadFrameworks() {
     try {
         const response = await cyberFetch('/api/frameworks');
         allFrameworks = await response.json();
-
-        const selector = document.getElementById('framework-selector');
-        selector.innerHTML = '<option value="">-- Seleccione un marco --</option>' +
-            allFrameworks.map(f => `<option value="${f._id}">${f.name}</option>`).join('');
-
-        renderFrameworkOverviewCards();
+        
+        renderFrameworkCards();
         renderSidebarList();
+        
+        const selector = document.getElementById('framework-selector');
+        if (selector) {
+            selector.innerHTML = '<option value="">Seleccione un marco normativo...</option>' +
+                allFrameworks.map(f => `<option value="${f._id}">${f.name} (${f.version})</option>`).join('');
+        }
     } catch (err) {
         console.error('Error al cargar marcos:', err);
     }
 }
 
-function renderFrameworkOverviewCards() {
-    const container = document.getElementById('frameworks-overview');
-    if (!container || allFrameworks.length === 0) return;
+function getFrameworkTheme(name) {
+    const n = name.toLowerCase();
+    if (n.includes('iso')) return { accent: '#3B82F6', bg: '#EFF6FF', text: '#1E40AF' };
+    if (n.includes('nist')) return { accent: '#EF4444', bg: '#FEF2F2', text: '#991B1B' };
+    if (n.includes('pci')) return { accent: '#8B5CF6', bg: '#F5F3FF', text: '#5B21B6' };
+    if (n.includes('soc')) return { accent: '#10B981', bg: '#ECFDF5', text: '#065F46' };
+    if (n.includes('asvs')) return { accent: '#F59E0B', bg: '#FFFBEB', text: '#92400E' };
+    return { accent: '#6B7280', bg: '#F9FAFB', text: '#374151' };
+}
+
+function renderFrameworkCards() {
+    const container = document.getElementById('marcos-grid');
+    if (!container) return;
 
     container.innerHTML = allFrameworks.map(f => {
         const theme = getFrameworkTheme(f.name);
         return `
-        <div class="glass card-hover" onclick="selectFramework('${f._id}')"
-            style="padding: 20px; cursor: pointer; border-top: 4px solid ${theme.accent}; text-align: center; transition: all 0.2s;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">${theme.emoji}</div>
+        <div onclick="selectFramework('${f._id}')" class="glass card-hover" style="padding: 24px; border-top: 4px solid ${theme.accent}; cursor: pointer;">
             <div style="font-weight: 700; font-size: 0.95rem; color: ${theme.text}; margin-bottom: 4px;">${f.name}</div>
             <div style="font-size: 0.75rem; color: var(--text-secondary);">${f.industry || 'General'}</div>
         </div>`;
