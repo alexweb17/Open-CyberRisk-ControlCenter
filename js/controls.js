@@ -1,65 +1,31 @@
-// ============ MASTER CONTROLS MANAGEMENT ============
 let liveControls = {};
-let controlsMaster = {};
-let allControls = [];
 
 async function loadLocalData() {
     try {
-        const resp = await fetch('/api/master-controls');
-        const controls = await resp.json();
-
+        const resp = await cyberFetch('/api/master-controls');
+        const data = await resp.json();
         liveControls = {};
-        controlsMaster = {};
-        controls.forEach(item => {
-            const mappedItem = {
-                _id: item._id,
-                codigo_control: item.codigo_control,
-                lineamiento: item.lineamiento,
-                recomendacion: item.recomendacion,
-                severidad: item.severidad,
-                guia_evidencia: item.guia_evidencia,
-                justificacion_riesgo: item.justificacion_riesgo,
-                sla_dias: item.sla_dias,
-                dominio: item.dominio,
-                name: item.lineamiento,
-                justification: item.justificacion_riesgo,
-                sla: parseInt(item.sla_dias) || 30,
-                severity: item.severidad,
-                evidence: item.guia_evidencia
-            };
-            liveControls[item.codigo_control] = mappedItem;
-            controlsMaster[item.codigo_control] = mappedItem;
-        });
-
-        if (Array.isArray(controls)) {
-            allControls = controls.map(item => ({
-                ...item,
-                _id: item._id ? item._id.toString() : null
-            }));
-            renderLineamientosList(allControls);
-            updateControlSelect(allControls);
-        }
+        data.forEach(c => liveControls[c.codigo_control] = c);
+        renderLineamientosList(data);
+        populateControlSelects(data);
     } catch (err) {
-        console.error("Error loading local data:", err);
+        console.error("Load Error:", err);
     }
 }
 
 function handleSearch() {
-    const query = document.getElementById('controls-search').value.toLowerCase();
-    const filtered = allControls.filter(c =>
-        c.codigo_control.toLowerCase().includes(query) ||
-        c.lineamiento.toLowerCase().includes(query) ||
-        c.severidad.toLowerCase().includes(query) ||
-        (c.recomendacion && c.recomendacion.toLowerCase().includes(query)) ||
-        (c.dominio && c.dominio.toLowerCase().includes(query))
+    const query = document.getElementById('master-search').value.toLowerCase();
+    const filtered = Object.values(liveControls).filter(c => 
+        c.codigo_control.toLowerCase().includes(query) || 
+        c.lineamiento.toLowerCase().includes(query)
     );
     renderLineamientosList(filtered);
 }
 
-function updateControlSelect(data) {
-    const select = document.getElementById('control-select');
+function populateControlSelects(data) {
+    const select = document.getElementById('kri-control');
     if (!select) return;
-    select.innerHTML = '<option value="">-- Seleccione un control --</option>';
+    select.innerHTML = '<option value="">Seleccione un control...</option>';
 
     data.forEach(item => {
         const id = item.codigo_control;
@@ -199,7 +165,7 @@ async function confirmDelete() {
     }
 
     try {
-        const resp = await fetch(`/api/master-controls/${control._id}`, { method: 'DELETE' });
+        const resp = await cyberFetch(`/api/master-controls/${control._id}`, { method: 'DELETE' });
         if (resp.ok) {
             closeDeleteModal();
             await loadLocalData();
@@ -228,7 +194,7 @@ async function handleControlSubmit(e) {
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/master-controls/${id}` : '/api/master-controls';
-        const resp = await fetch(url, {
+        const resp = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
