@@ -21,7 +21,7 @@ function getFrameworkTheme(name) {
 
 async function loadFrameworks() {
     try {
-        const response = await fetch('/api/frameworks');
+        const response = await cyberFetch('/api/frameworks');
         allFrameworks = await response.json();
 
         const selector = document.getElementById('framework-selector');
@@ -100,7 +100,7 @@ async function loadFrameworkRequirements() {
         detailsDiv.style.borderLeftColor = theme.accent;
         detailsDiv.style.background = `linear-gradient(135deg, ${theme.bg}, #F8FAFC)`;
 
-        const response = await fetch(`/api/frameworks/${frameworkId}/requirements`);
+        const response = await cyberFetch(`/api/frameworks/${frameworkId}/requirements`);
         currentRequirements = await response.json();
 
         // Update count
@@ -162,14 +162,14 @@ function renderRequirements(requirements) {
     const theme = getFrameworkTheme(selectedText);
 
     grid.innerHTML = requirements.map(req => `
-        <div class="glass card-hover" style="padding: 24px; position: relative; overflow: hidden; border-top: 4px solid ${theme.accent}; height: 100%; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                <span style="font-weight: 800; color: ${theme.accent}; font-size: 1.2rem; letter-spacing: -0.02em;">${req.code}</span>
-                <span style="font-size: 0.7rem; background: ${theme.bg}; color: ${theme.text}; padding: 4px 10px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; max-width: 180px; text-align: right;">${req.domain}</span>
+        <div class="glass card-hover" style="padding: 24px; position: relative; overflow: hidden; border-top: 4px solid ${theme.accent}; display: flex; flex-direction: column; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 20px;">
+                <span style="font-weight: 800; color: ${theme.accent}; font-size: 1.25rem; letter-spacing: -0.02em; white-space: nowrap;">${req.code}</span>
+                <span style="font-size: 0.7rem; background: ${theme.bg}; color: ${theme.text}; padding: 4px 10px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">${req.domain}</span>
             </div>
-            <h4 style="margin: 0 0 16px 0; line-height: 1.5; font-weight: 600; color: var(--text-primary); flex-grow: 1;">${req.requirement}</h4>
+            <h4 style="margin: 0 0 16px 0; line-height: 1.5; font-weight: 600; color: var(--text-primary); font-size: 1.1rem;">${req.requirement}</h4>
             <div style="font-size: 0.85rem; color: var(--text-secondary); background: rgba(0,0,0,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
-                <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Descripción</div>
+                <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Descripción / Guía</div>
                 <div style="line-height: 1.6;">${req.guidance}</div>
             </div>
         </div>

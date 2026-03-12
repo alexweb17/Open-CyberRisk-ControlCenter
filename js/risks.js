@@ -3,7 +3,7 @@ let riskDashboardData = null;
 
 async function loadRiskDashboard() {
     try {
-        const res = await fetch('/api/risk-dashboard');
+        const res = await cyberFetch('/api/risk-dashboard');
         const data = await res.json();
         riskDashboardData = data;
 
@@ -104,7 +104,7 @@ function renderHeatMap(heatMap) {
             return `<td style="padding: 16px; border: 1px solid var(--border-color); background: ${bgColor}; font-size: 1.3rem; font-weight: 700;">${count}</td>`;
         }).join('');
         return `<tr>
-            <td style="padding: 12px; border: 1px solid var(--border-color); font-weight: 600; text-align: left;">${getSevBadge(sev)}</td>
+    <td style="padding: 12px; border: 1px solid var(--border-color); font-weight: 600; text-align: left;">${getSevBadge(sev)}</td>
             ${cells}
         </tr>`;
     }).join('');

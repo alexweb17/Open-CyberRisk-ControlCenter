@@ -5,7 +5,7 @@ let allControls = [];
 
 async function loadLocalData() {
     try {
-        const resp = await fetch('/api/master-controls');
+        const resp = await cyberFetch('/api/master-controls');
         const controls = await resp.json();
 
         liveControls = {};
@@ -199,7 +199,7 @@ async function confirmDelete() {
     }
 
     try {
-        const resp = await fetch(`/api/master-controls/${control._id}`, { method: 'DELETE' });
+        const resp = await cyberFetch(`/api/master-controls/${control._id}`, { method: 'DELETE' });
         if (resp.ok) {
             closeDeleteModal();
             await loadLocalData();
@@ -228,7 +228,7 @@ async function handleControlSubmit(e) {
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/master-controls/${id}` : '/api/master-controls';
-        const resp = await fetch(url, {
+        const resp = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

@@ -6,7 +6,7 @@ let currentProcesoControlSource = 'marco_base'; // 'marco_base' or 'framework'
 let procesoFrameworks = [];
 async function loadProcesos() {
     try {
-        const response = await fetch('/api/procesos');
+        const response = await cyberFetch('/api/procesos');
         procesosData = await response.json();
         renderProcesos(procesosData);
         updateProcesosDashboard(procesosData);
@@ -139,7 +139,7 @@ async function handleProcesoSubmit(e) {
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/procesos/${id}` : '/api/procesos';
-        const response = await fetch(url, {
+        const response = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -170,8 +170,10 @@ function closeDeleteProcesoModal() {
 
 async function confirmDeleteProceso() {
     const id = document.getElementById('delete-proceso-id').value;
+    if (!id) return;
+
     try {
-        const response = await fetch(`/api/procesos/${id}`, { method: 'DELETE' });
+        const response = await cyberFetch(`/api/procesos/${id}`, { method: 'DELETE' });
         if (response.ok) {
             closeDeleteProcesoModal();
             loadProcesos();
@@ -227,7 +229,7 @@ function switchProcesoControlSource(source) {
 
 async function loadFrameworksForProceso() {
     try {
-        const resp = await fetch('/api/frameworks');
+        const resp = await cyberFetch('/api/frameworks');
         procesoFrameworks = await resp.json();
         const select = document.getElementById('proceso-framework-select');
         if (!select) return;
@@ -268,7 +270,7 @@ async function searchControlsForProceso(query) {
                 url = `/api/master-controls/search?q=${encodeURIComponent(query)}`;
             }
 
-            const resp = await fetch(url);
+            const resp = await cyberFetch(url);
             const items = await resp.json();
 
             if (items.length === 0) {

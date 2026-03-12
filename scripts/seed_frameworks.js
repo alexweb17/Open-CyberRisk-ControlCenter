@@ -84,28 +84,41 @@ const frameworksData = [
 async function seed() {
     try {
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ccc_system');
-        console.log("Conectado a MongoDB para seeding de marcos...");
-
-        // Clear existing data
-        await Framework.deleteMany({});
-        await FrameworkRequirement.deleteMany({});
-        console.log("Limpieza de datos previa completada.");
+        console.log("Conectado a MongoDB para seeding de marcos (modo no-destructivo)...");
 
         for (const fData of frameworksData) {
             const { requirements, ...fInfo } = fData;
-            const framework = new Framework(fInfo);
-            await framework.save();
-            console.log(`Marco guardado: ${framework.name}`);
 
-            const reqsToSave = requirements.map(r => ({
-                ...r,
-                framework_id: framework._id
-            }));
-            await FrameworkRequirement.insertMany(reqsToSave);
-            console.log(`  Requisitos guardados para ${framework.name}: ${reqsToSave.length}`);
+            // Upsert: create framework only if it doesn't exist
+            let framework = await Framework.findOne({ name: fInfo.name });
+            if (!framework) {
+                framework = new Framework(fInfo);
+                await framework.save();
+                console.log(`Marco creado: ${framework.name}`);
+            } else {
+                // Update description/version/industry if needed
+                framework.description = fInfo.description;
+                framework.version = fInfo.version;
+                framework.industry = fInfo.industry;
+                await framework.save();
+                console.log(`Marco actualizado: ${framework.name} (${framework._id})`);
+            }
+
+            // Only insert base requirements if the framework has NO requirements yet
+            const existingCount = await FrameworkRequirement.countDocuments({ framework_id: framework._id });
+            if (existingCount === 0) {
+                const reqsToSave = requirements.map(r => ({
+                    ...r,
+                    framework_id: framework._id
+                }));
+                await FrameworkRequirement.insertMany(reqsToSave);
+                console.log(`  Requisitos base guardados para ${framework.name}: ${reqsToSave.length}`);
+            } else {
+                console.log(`  ${framework.name} ya tiene ${existingCount} requisitos, se omite la inserción base.`);
+            }
         }
 
-        console.log("Seeding completado satisfactoriamente.");
+        console.log("Seeding completado satisfactoriamente (sin pérdida de datos).");
         process.exit(0);
     } catch (err) {
         console.error("Error durante el seeding:", err);

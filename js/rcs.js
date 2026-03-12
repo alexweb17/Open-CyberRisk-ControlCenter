@@ -8,7 +8,7 @@ let rcsFrameworks = []; // cached framework list
 
 async function loadRCSData() {
     try {
-        const resp = await fetch('/api/rcs');
+        const resp = await cyberFetch('/api/rcs');
         const data = await resp.json();
         rcsData = {};
         data.forEach(r => { rcsData[r._id] = r; });
@@ -23,7 +23,7 @@ function renderRCSTable(data) {
     const tbody = document.getElementById('rcs-table-body');
     if (!tbody) return;
     if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding: 40px; text-align: center; color: var(--text-secondary);">No hay registros RCS. Haga clic en "+ AGREGAR RCS" para crear uno.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="padding: 40px; text-align: center; color: var(--text-secondary);">No hay registros de Consultoría. Haga clic en "+ AGREGAR CONSULTORÍA" para crear una.</td></tr>`;
         return;
     }
     tbody.innerHTML = data.map(r => {
@@ -71,7 +71,7 @@ function showRCSDetail() {
 
 async function createNewRCS() {
     try {
-        const resp = await fetch('/api/rcs', {
+        const resp = await cyberFetch('/api/rcs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
@@ -80,7 +80,7 @@ async function createNewRCS() {
         if (resp.ok && result.data) {
             openRCSDetail(result.data._id);
         } else {
-            alert('Error al crear nuevo RCS');
+            alert('Error al crear nueva consultoría');
         }
     } catch (err) {
         console.error(err);
@@ -96,7 +96,7 @@ async function openRCSDetail(rcsId) {
     switchControlSource('marco_base');
 
     try {
-        const resp = await fetch(`/api/rcs/${rcsId}`);
+        const resp = await cyberFetch(`/api/rcs/${rcsId}`);
         const rcs = await resp.json();
 
         document.getElementById('rcs-detail-id').value = rcs._id;
@@ -121,7 +121,7 @@ async function openRCSDetail(rcsId) {
 
     } catch (err) {
         console.error('Error loading RCS detail:', err);
-        alert('Error al cargar RCS');
+        alert('Error al cargar consultoría');
         showRCSList();
     }
 }
@@ -136,7 +136,7 @@ async function saveRCSDetail() {
     };
 
     try {
-        const resp = await fetch(`/api/rcs/${id}`, {
+        const resp = await cyberFetch(`/api/rcs/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -145,7 +145,7 @@ async function saveRCSDetail() {
         if (resp.ok) {
             showRCSList();
         } else {
-            alert('Error al guardar RCS');
+            alert('Error al guardar consultoría');
         }
     } catch (err) {
         console.error(err);
@@ -161,11 +161,6 @@ function switchControlSource(source) {
     const fwTab = document.getElementById('src-tab-framework');
     const fwPanel = document.getElementById('framework-selector-panel');
     const searchInput = document.getElementById('control-search-input');
-    const resultsDiv = document.getElementById('control-search-results');
-
-    // Clear search
-    if (searchInput) searchInput.value = '';
-    if (resultsDiv) resultsDiv.style.display = 'none';
 
     if (source === 'marco_base') {
         mbTab.style.background = 'var(--accent-color)';
@@ -173,20 +168,25 @@ function switchControlSource(source) {
         fwTab.style.background = 'transparent';
         fwTab.style.color = 'var(--text-secondary)';
         fwPanel.style.display = 'none';
-        if (searchInput) searchInput.placeholder = 'Buscar control para agregar (código, nombre, dominio)...';
+        if (searchInput) searchInput.placeholder = 'Buscar en Marco Base...';
+        loadFullMasterControls();
     } else {
         fwTab.style.background = '#4F46E5';
         fwTab.style.color = 'white';
         mbTab.style.background = 'transparent';
         mbTab.style.color = 'var(--text-secondary)';
         fwPanel.style.display = '';
-        if (searchInput) searchInput.placeholder = 'Buscar requisito regulatorio (código, requisito, guía)...';
+        if (searchInput) searchInput.placeholder = 'Buscar en Marco Normativo...';
+        // Only load if a framework is already selected
+        const fwId = document.getElementById('rcs-framework-select')?.value;
+        if (fwId) loadFullFrameworkRequirements(fwId);
+        else document.getElementById('control-search-results').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Seleccione un marco normativo para ver los controles</div>';
     }
 }
 
 async function loadFrameworksForRCS() {
     try {
-        const resp = await fetch('/api/frameworks');
+        const resp = await cyberFetch('/api/frameworks');
         rcsFrameworks = await resp.json();
 
         const select = document.getElementById('rcs-framework-select');
@@ -204,13 +204,7 @@ async function loadFrameworksForRCS() {
     }
 }
 
-function onFrameworkSelected() {
-    // Re-trigger search with new framework filter if there's text in search
-    const searchInput = document.getElementById('control-search-input');
-    if (searchInput && searchInput.value.length >= 2) {
-        searchControlsForRCS(searchInput.value);
-    }
-}
+
 
 // ============ CONTROL SEARCH ============
 
@@ -218,8 +212,12 @@ async function searchControlsForRCS(query) {
     clearTimeout(searchTimeout);
     const resultsDiv = document.getElementById('control-search-results');
 
-    if (query.length < 2) {
-        resultsDiv.style.display = 'none';
+    if (!query || query.length < 2) {
+        if (currentControlSource === 'marco_base') loadFullMasterControls();
+        else {
+            const fwId = document.getElementById('rcs-framework-select')?.value;
+            if (fwId) loadFullFrameworkRequirements(fwId);
+        }
         return;
     }
 
@@ -233,50 +231,9 @@ async function searchControlsForRCS(query) {
                 url = `/api/master-controls/search?q=${encodeURIComponent(query)}`;
             }
 
-            const resp = await fetch(url);
+            const resp = await cyberFetch(url);
             const items = await resp.json();
-
-            if (items.length === 0) {
-                resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No se encontraron controles</div>';
-            } else if (currentControlSource === 'framework') {
-                resultsDiv.innerHTML = items.map(r => {
-                    const isAdded = currentRCSControls.some(rc => rc.codigo_control === r.code);
-                    return `
-                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); ${isAdded ? 'opacity: 0.5;' : ''}">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                            <div>
-                                <span style="font-weight: 600; color: var(--text-primary);">${r.code}</span>
-                                <span style="background: #EEF2FF; color: #4338CA; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; margin-left: 8px;">📋 ${r.framework_name || 'Marco'}</span>
-                            </div>
-                            ${isAdded ? '<span style="color: #10B981; font-size: 0.8rem;">✓ Agregado</span>' :
-                            `<button onclick="addControlToRCS('${r._id}', '${r.code}', 'FrameworkRequirement')" style="background: #4F46E5; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+ Agregar</button>`}
-                        </div>
-                        <div style="font-size: 0.85rem; color: #6366F1; margin-bottom: 6px;">${r.domain || 'Sin dominio'}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 8px;">${r.requirement || ''}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">${r.guidance ? r.guidance.substring(0, 200) + (r.guidance.length > 200 ? '...' : '') : ''}</div>
-                    </div>`;
-                }).join('');
-            } else {
-                resultsDiv.innerHTML = items.map(c => {
-                    const isAdded = currentRCSControls.some(rc => rc.codigo_control === c.codigo_control);
-                    const severityClass = getSeverityClass(c.severidad);
-                    return `
-                    <div style="padding: 16px; border-bottom: 1px solid var(--border-color); ${isAdded ? 'opacity: 0.5;' : ''}">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                            <div>
-                                <span style="font-weight: 600; color: var(--text-primary);">${c.codigo_control}</span>
-                                <span class="severity-badge ${severityClass}" style="margin-left: 8px;">${c.severidad}</span>
-                            </div>
-                            ${isAdded ? '<span style="color: #10B981; font-size: 0.8rem;">✓ Agregado</span>' :
-                            `<button onclick="addControlToRCS('${c._id}', '${c.codigo_control}', 'MasterControl')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+ Agregar</button>`}
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">${c.dominio || 'Sin dominio'}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 8px;">${c.lineamiento || 'Sin lineamiento'}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">${c.recomendacion ? c.recomendacion.substring(0, 200) + (c.recomendacion.length > 200 ? '...' : '') : 'Sin recomendación'}</div>
-                    </div>`;
-                }).join('');
-            }
-            resultsDiv.style.display = 'block';
+            renderExplorerResults(items);
         } catch (err) {
             console.error('Error searching controls:', err);
         }
@@ -288,7 +245,7 @@ async function addControlToRCS(controlId, codigoControl, tipoFuente) {
     tipoFuente = tipoFuente || 'MasterControl';
 
     try {
-        const resp = await fetch(`/api/rcs/${currentRCSId}/controls`, {
+        const resp = await cyberFetch(`/api/rcs/${currentRCSId}/controls`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ control_id: controlId, codigo_control: codigoControl, tipo_fuente: tipoFuente })
@@ -312,10 +269,10 @@ async function addControlToRCS(controlId, codigoControl, tipoFuente) {
 
 async function removeControlFromRCS(codigoControl) {
     if (!currentRCSId) return;
-    if (!confirm(`¿Quitar control ${codigoControl} de este RCS?`)) return;
+    if (!confirm(`¿Quitar control ${codigoControl} de esta consultoría?`)) return;
 
     try {
-        const resp = await fetch(`/api/rcs/${currentRCSId}/controls/${codigoControl}`, {
+        const resp = await cyberFetch(`/api/rcs/${currentRCSId}/controls/${codigoControl}`, {
             method: 'DELETE'
         });
 
@@ -334,7 +291,7 @@ async function updateControlState(codigoControl, newState) {
     if (!currentRCSId) return;
 
     try {
-        const resp = await fetch(`/api/rcs/${currentRCSId}/controls/${codigoControl}`, {
+        const resp = await cyberFetch(`/api/rcs/${currentRCSId}/controls/${codigoControl}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ estado_control: newState })
@@ -363,7 +320,7 @@ function renderControlsList() {
                 <path d="M2 12l10 5 10-5"/>
             </svg>
             <p style="margin: 0 0 8px 0; font-weight: 500;">Sin controles asociados</p>
-            <p style="margin: 0; font-size: 0.85rem;">Use el buscador para agregar controles a este RCS</p>
+            <p style="margin: 0; font-size: 0.85rem;">Use el buscador para agregar controles a esta consultoría</p>
         </div>`;
         return;
     }
@@ -470,11 +427,11 @@ function updateRCSStats() {
 
 async function deleteRCS(rcsId) {
     try {
-        const resp = await fetch(`/api/rcs/${rcsId}`, { method: 'DELETE' });
+        const resp = await cyberFetch(`/api/rcs/${rcsId}`, { method: 'DELETE' });
         if (resp.ok) {
             loadRCSData();
         } else {
-            alert('Error al eliminar RCS');
+            alert('Error al eliminar consultoría');
         }
     } catch (err) {
         console.error(err);
@@ -485,5 +442,97 @@ async function deleteRCS(rcsId) {
 function openDeleteRCSModal(rcsId, rcsCode) {
     if (confirm(`¿Está seguro que desea eliminar el registro ${rcsCode}?\n\nEsta acción no se puede deshacer.`)) {
         deleteRCS(rcsId);
+    }
+}
+
+async function loadFullMasterControls() {
+    try {
+        const resp = await cyberFetch('/api/master-controls');
+        const items = await resp.json();
+        renderExplorerResults(items);
+    } catch (err) {
+        console.error('Error loading full master controls:', err);
+    }
+}
+
+async function loadFullFrameworkRequirements(frameworkId) {
+    if (!frameworkId) return;
+    try {
+        const resp = await cyberFetch(`/api/frameworks/${frameworkId}/requirements`);
+        const items = await resp.json();
+        renderExplorerResults(items);
+    } catch (err) {
+        console.error('Error loading framework requirements:', err);
+    }
+}
+
+function renderExplorerResults(items) {
+    const resultsDiv = document.getElementById('control-search-results');
+    if (!resultsDiv) return;
+
+    if (!items || items.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No se encontraron controles</div>';
+        return;
+    }
+
+    resultsDiv.innerHTML = items.map(item => {
+        const isFR = currentControlSource === 'framework';
+        const code = isFR ? item.code : item.codigo_control;
+        const isAdded = currentRCSControls.some(rc => rc.codigo_control === code);
+
+        const bgColor = isFR ? '#EEF2FF' : '#F0FDF4';
+        const color = isFR ? '#4338CA' : '#166534';
+        const badge = isFR ? '📋 Normativo' : '🛡️ Base';
+        const title = isFR ? item.requirement : item.lineamiento;
+        const subTitle = isFR ? item.domain : item.dominio;
+        const desc = isFR ? (item.guidance || '') : (item.recomendacion || '');
+        const id = item._id;
+        const type = isFR ? 'FrameworkRequirement' : 'MasterControl';
+
+        return `
+        <div style="background: white; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; position: relative; transition: all 0.2s; ${isAdded ? 'border-color: #10B981; background: #F0FDF410;' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${code}</span>
+                    <span style="background: ${bgColor}; color: ${color}; padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 700;">${badge}</span>
+                </div>
+                ${isAdded ? '<span style="color: #10B981; font-weight: 600; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Agregado</span>' :
+                `<button onclick="addControlToRCS('${id}', '${code}', '${type}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">Agregar</button>`}
+            </div>
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${subTitle || ''}</div>
+            <div style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 6px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${title || ''}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${desc}</div>
+        </div>`;
+    }).join('');
+}
+
+function filterAddedControls() {
+    const query = document.getElementById('rcs-added-controls-search').value.toLowerCase();
+    const cards = document.querySelectorAll('#rcs-controls-list > div[style*="background: white"]');
+
+    cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (text.includes(query)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Handle empty state if filtering results in no matches
+    // (Check visibility of cards)
+    const visibleCards = Array.from(cards).filter(c => c.style.display !== 'none');
+    const emptyMsg = document.querySelector('#rcs-controls-list .empty-state');
+    if (visibleCards.length === 0 && cards.length > 0) {
+        // We could inject a "no matches" message but for now just showing empty state is fine
+    }
+}
+
+function onFrameworkSelected() {
+    const fwId = document.getElementById('rcs-framework-select')?.value;
+    if (fwId) {
+        loadFullFrameworkRequirements(fwId);
+    } else {
+        document.getElementById('control-search-results').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Seleccione un marco normativo para ver los controles</div>';
     }
 }
