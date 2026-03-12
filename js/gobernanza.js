@@ -1,153 +1,49 @@
-// ============ GOBERNANZA & DIRECTORIO FUNCTIONS ============
-
 let objectivesData = [];
 let krisData = [];
 
 async function loadGovernanceData() {
     try {
-        // Load Executive Summary
-        const summaryResp = await fetch('/api/governance/executive-summary');
-        const summary = await summaryResp.json();
-        renderExecutiveSummary(summary);
+        const [objResp, kriResp] = await Promise.all([
+            cyberFetch('/api/governance/objectives'),
+            cyberFetch('/api/governance/kris')
+        ]);
 
-        // Load specific tabs if active
-        loadObjectives();
-        loadKRIs();
-    } catch (error) {
-        console.error('Error loading governance data:', error);
-    }
-}
+        objectivesData = await objResp.json();
+        krisData = await kriResp.json();
 
-function renderExecutiveSummary(summary) {
-    document.getElementById('gov-total-exposure').textContent = formatCurrency(summary.totalFinancialExposure || 0);
-    document.getElementById('gov-obj-count').textContent = summary.strategicObjectivesCount || 0;
-
-    const stats = summary.kriStatus || { total: 0, critical: 0, warning: 0 };
-    document.getElementById('gov-kri-total').textContent = stats.total;
-    document.getElementById('gov-kri-summary').innerHTML = `
-        <span style="color: #EF4444;">${stats.critical} Críticos</span> / 
-        <span style="color: #F59E0B;">${stats.warning} Advertencias</span>
-    `;
-
-    // Fetch top risks from Business Processes
-    fetchTopBusinessRisks();
-}
-
-async function fetchTopBusinessRisks() {
-    try {
-        const resp = await fetch('/api/procesos');
-        const processes = await resp.json();
-
-        // Sort by ALE descending
-        const topProcesses = processes
-            .filter(p => !p.deleted && (p.ale_expectativa_perdida || 0) > 0)
-            .sort((a, b) => b.ale_expectativa_perdida - a.ale_expectativa_perdida)
-            .slice(0, 5);
-
-        const container = document.getElementById('gov-top-risk-business');
-        if (topProcesses.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay datos de exposición financiera registrados.</p>';
-            return;
-        }
-
-        container.innerHTML = topProcesses.map(p => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 8px;">
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 0.9rem;">${p.nombre_proceso}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">${p.area_responsable}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 700; color: var(--accent-terracotta);">${formatCurrency(p.ale_expectativa_perdida)}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">ALE Anual</div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error fetching top risks:', error);
-    }
-}
-
-async function loadObjectives() {
-    try {
-        const resp = await fetch('/api/governance/objectives');
-        objectivesData = await resp.json();
-        renderObjectivesTable(objectivesData);
         updateObjectiveAlignment(objectivesData);
-        populateKRIObjectiveSelect(objectivesData);
-    } catch (error) {
-        console.error('Error loading objectives:', error);
+        updateKRIGrid(krisData);
+    } catch (err) {
+        console.error('Error loading governance data:', err);
     }
 }
 
-function renderObjectivesTable(data) {
-    const tbody = document.getElementById('gov-objectives-list');
-    if (!tbody) return;
-
-    tbody.innerHTML = data.map(obj => `
-        <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: 12px;">
-                <div style="font-weight: 600;">${obj.name}</div>
-                <div style="font-size: 0.75rem; color: var(--text-secondary);">${obj.description || 'Sin descripción'}</div>
-            </td>
-            <td style="padding: 12px;">${obj.department}</td>
-            <td style="padding: 12px;">${getPriorityBadge(obj.priority)}</td>
-            <td style="padding: 12px; text-align: right;">
-                <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                    <button onclick="openEditObjectiveModal('${obj._id}')" class="btn-icon">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"/></svg>
-                    </button>
-                    <button onclick="deleteObjective('${obj._id}')" class="btn-icon" style="color: #B91C1C;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function getPriorityBadge(prio) {
-    const colors = { 'Alta': '#EF4444', 'Media': '#F59E0B', 'Baja': '#3B82F6' };
-    return `<span style="background: ${colors[prio]}15; color: ${colors[prio]}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${prio}</span>`;
-}
-
-async function loadKRIs() {
-    try {
-        const resp = await fetch('/api/governance/kris');
-        krisData = await resp.json();
-        renderKRIGrid(krisData);
-    } catch (error) {
-        console.error('Error loading KRIs:', error);
-    }
-}
-
-function renderKRIGrid(data) {
-    const grid = document.getElementById('gov-kri-grid');
-    if (!grid) return;
-
+function updateKRIGrid(data) {
+    const container = document.getElementById('kris-grid');
+    if (!container) return;
     if (data.length === 0) {
-        grid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); grid-column: 1/-1;">No hay KRIs registrados. Comience agregando uno vinculado a un objetivo estratégico.</p>';
+        container.innerHTML = '<div class="glass" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">No hay KRIs registrados</div>';
         return;
     }
 
-    grid.innerHTML = data.map(kri => {
+    container.innerHTML = data.map(kri => {
         const status = getKRIStatus(kri);
-        const percent = Math.min(100, (kri.current_value / kri.threshold_critical) * 100);
-
+        const percent = Math.min((kri.current_value / kri.threshold_critical) * 100, 100);
         return `
             <div class="glass" style="padding: 20px; border-left: 4px solid ${status.color};">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                     <div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">KRI</div>
                         <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">${kri.name}</div>
-                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">OBJ: ${kri.objective_id?.name || 'N/A'}</div>
                     </div>
                 </div>
-                
-                <div style="margin: 20px 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                        <div style="font-size: 1.75rem; font-weight: 700; color: ${status.color};">${kri.current_value}${kri.unit}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Umbral Crítico: ${kri.threshold_critical}${kri.unit}</div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
+                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">${kri.current_value}${kri.unit}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Umbral: ${kri.threshold_critical}${kri.unit}</span>
                     </div>
-                    <div style="height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden;">
                         <div style="height: 100%; width: ${percent}%; background: ${status.color};"></div>
                     </div>
                 </div>
@@ -167,6 +63,8 @@ function getKRIStatus(kri) {
     return { label: 'Normal', color: '#10B981' };
 }
 
+// ============ TAB SWITCH ============
+
 function switchGovTab(tab) {
     document.querySelectorAll('.gov-tab').forEach(t => t.style.display = 'none');
     document.querySelectorAll('.tab-btn').forEach(b => {
@@ -177,7 +75,6 @@ function switchGovTab(tab) {
 
     document.getElementById(`gov-${tab}-tab`).style.display = tab === 'kris' ? 'grid' : 'block';
 
-    // UI Visuals
     const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.toLowerCase().includes(tab === 'resumen' ? 'resumen' : tab === 'objetivos' ? 'objetivos' : 'kris'));
     if (activeBtn) {
         activeBtn.classList.add('active');
@@ -189,7 +86,8 @@ function switchGovTab(tab) {
     if (tab === 'kris') loadKRIs();
 }
 
-// Modal Handlers
+// ============ MODALS ============
+
 function openObjectiveModal() {
     document.getElementById('objective-form').reset();
     document.getElementById('objective-id').value = '';
@@ -216,7 +114,7 @@ function openEditObjectiveModal(id) {
 async function handleObjectiveSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('objective-id').value;
-    const data = {
+    const formData = {
         name: document.getElementById('objective-name').value,
         department: document.getElementById('objective-dept').value,
         priority: document.getElementById('objective-priority').value,
@@ -226,97 +124,54 @@ async function handleObjectiveSubmit(e) {
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/governance/objectives/${id}` : '/api/governance/objectives';
-        const resp = await fetch(url, {
+        const resp = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify(formData)
         });
         if (resp.ok) {
-            closeObjectiveModal();
-            loadObjectives();
+            document.getElementById('objective-modal').style.display = 'none';
             loadGovernanceData();
         }
-    } catch (err) { console.error(err); }
-}
-
-async function deleteObjective(id) {
-    if (!confirm('¿Seguro que desea eliminar este objetivo?')) return;
-    try {
-        await fetch(`/api/governance/objectives/${id}`, { method: 'DELETE' });
-        loadObjectives();
-        loadGovernanceData();
-    } catch (err) { console.error(err); }
-}
-
-function openKRIModal() {
-    document.getElementById('kri-form').reset();
-    document.getElementById('kri-id').value = '';
-    document.getElementById('kri-modal-title').textContent = 'Nuevo Key Risk Indicator (KRI)';
-    document.getElementById('kri-modal').style.display = 'block';
-    populateKRIObjectiveSelect(objectivesData);
-}
-
-function closeKRIModal() {
-    document.getElementById('kri-modal').style.display = 'none';
-}
-
-function populateKRIObjectiveSelect(objs) {
-    const select = document.getElementById('kri-objective');
-    if (!select) return;
-    select.innerHTML = objs.map(o => `<option value="${o._id}">${o.name}</option>`).join('');
-}
-
-async function handleKRISubmit(e) {
-    e.preventDefault();
-    const id = document.getElementById('kri-id').value;
-    const data = {
-        name: document.getElementById('kri-name').value,
-        objective_id: document.getElementById('kri-objective').value,
-        unit: document.getElementById('kri-unit').value,
-        threshold_warning: parseFloat(document.getElementById('kri-warning').value),
-        threshold_critical: parseFloat(document.getElementById('kri-critical').value),
-        current_value: parseFloat(document.getElementById('kri-current').value || 0)
-    };
-
-    try {
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `/api/governance/kris/${id}` : '/api/governance/kris';
-        const resp = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (resp.ok) {
-            closeKRIModal();
-            loadKRIs();
-            loadGovernanceData();
-        }
-    } catch (err) { console.error(err); }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 function updateObjectiveAlignment(objs) {
     const container = document.getElementById('gov-obj-alignment');
     if (!container) return;
     if (objs.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay objetivos registrados.</p>';
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">No hay objetivos registrados.</p>';
         return;
     }
 
-    container.innerHTML = objs.map(o => `
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: ${o.priority === 'Alta' ? '#EF4444' : o.priority === 'Media' ? '#F59E0B' : '#3B82F6'};"></div>
-            <div style="flex: 1; font-size: 0.9rem;">${o.name}</div>
-            <div style="font-size: 0.75rem; font-weight: 600;">${o.department}</div>
+    container.innerHTML = objs.map(o => {
+        const prioColor = o.priority === 'Alta' ? '#EF4444' : o.priority === 'Media' ? '#F59E0B' : '#3B82F6';
+        return `
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${prioColor}; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+                <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">${o.name}</div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary);">${o.description || 'Sin descripción'}</div>
+            </div>
+            <div style="text-align: right; flex-shrink: 0;">
+                <span style="font-size: 0.7rem; background: ${prioColor}15; color: ${prioColor}; padding: 2px 8px; border-radius: 6px; font-weight: 600;">${o.priority}</span>
+                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 2px;">${o.department}</div>
+            </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
-// Utilities
+// ============ UTILITIES ============
+
 function formatCurrency(val) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 }
 
-// Global Exports
+// ============ GLOBAL EXPORTS ============
+
 window.loadGovernanceData = loadGovernanceData;
 window.switchGovTab = switchGovTab;
 window.openObjectiveModal = openObjectiveModal;

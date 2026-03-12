@@ -1,33 +1,40 @@
-// ============ INFORMES L3 FUNCTIONS ============
 let informesL3Data = [];
 
 async function loadInformesL3() {
     try {
         const response = await fetch('/api/informesl3');
-        informesL3Data = await response.json();
-        renderInformesL3(informesL3Data);
-        updateInformesDashboard(informesL3Data);
+        if (response.ok) {
+            informesL3Data = await response.json();
+            renderInformesTable(informesL3Data);
+            updateInformesDashboard(informesL3Data);
+        }
     } catch (error) {
-        console.error('Error loading Informes L3:', error);
+        console.error('Error loading informes L3:', error);
     }
 }
 
-function renderInformesL3(data) {
+function renderInformesTable(data) {
     const tbody = document.getElementById('informes-table-body');
     if (!tbody) return;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--text-secondary);">No hay informes registrados</td></tr>';
+        return;
+    }
+
     tbody.innerHTML = data.map(inf => `
         <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: 12px;">${inf.codigo_num || '-'}</td>
-            <td style="padding: 12px; font-weight: 500;">${inf.titulo}</td>
-            <td style="padding: 12px;">${inf.tipo}</td>
-            <td style="padding: 12px;">${getSeverityBadge(inf.severidad)}</td>
-            <td style="padding: 12px;">${getEstadoBadgeInformes(inf.estado_atencion)}</td>
+            <td style="padding: 12px; font-weight: 600;">${inf.codigo_informe}</td>
+            <td style="padding: 12px; font-weight: 500;">${inf.nombre_informe}</td>
+            <td style="padding: 12px;">${inf.tipo_revision}</td>
+            <td style="padding: 12px;">${getSeverityBadge(inf.nivel_riesgo)}</td>
+            <td style="padding: 12px;">${(inf.fecha_emision || '').split('T')[0]}</td>
             <td style="padding: 12px; text-align: right;">
                 <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                    <button onclick="openEditInformeModal('${inf._id}')" style="background:none; border:1px solid var(--border-color); cursor:pointer; padding: 6px; border-radius: 6px;">
+                    <button onclick="openEditInformeModal('${inf._id}')" class="btn-action">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"/></svg>
                     </button>
-                    <button onclick="openDeleteInformeModal('${inf._id}', '${inf.titulo}')" style="background:none; border:1px solid #FEE2E2; cursor:pointer; padding: 6px; border-radius: 6px; color: #B91C1C;">
+                    <button onclick="openDeleteInformeModal('${inf._id}', '${inf.nombre_informe}')" class="btn-delete">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </div>
@@ -37,8 +44,8 @@ function renderInformesL3(data) {
 }
 
 function getSeverityBadge(sev) {
-    const colors = { 'Crítica': '#DC2626', 'Alta': '#EA580C', 'Media': '#CA8A04', 'Baja': '#16A34A' };
-    return `<span class="status-badge" style="background: ${colors[sev] || '#9CA3AF'}15; color: ${colors[sev] || '#9CA3AF'}; border: 1px solid ${colors[sev] || '#9CA3AF'}30;">${sev || 'N/A'}</span>`;
+    const colors = { 'Crítica': '#B91C1C', 'Alta': '#D97706', 'Media': '#059669', 'Baja': '#2563EB' };
+    return `<span style="background: ${colors[sev] || '#6B7280'}15; color: ${colors[sev] || '#6B7280'}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">${sev || 'Media'}</span>`;
 }
 
 function getEstadoBadgeInformes(est) {
@@ -61,7 +68,7 @@ function updateInformesDashboard(data) {
 function openInformeModal() {
     document.getElementById('informe-form').reset();
     document.getElementById('informe-id').value = '';
-    document.getElementById('informe-modal-title').textContent = 'Nuevo Informe L3';
+    document.getElementById('informe-modal-title').textContent = 'Nuevo Informe Crítico L3';
     document.getElementById('informe-modal').style.display = 'block';
 }
 
@@ -90,7 +97,7 @@ function openEditInformeModal(id) {
     document.getElementById('informe-lecciones').value = inf.lecciones_aprendidas || '';
     document.getElementById('informe-riesgo-residual').value = inf.riesgo_residual || 'N/A';
 
-    document.getElementById('informe-modal-title').textContent = 'Editar Informe L3';
+    document.getElementById('informe-modal-title').textContent = 'Editar Informe Crítico L3';
     document.getElementById('informe-modal').style.display = 'block';
 }
 
