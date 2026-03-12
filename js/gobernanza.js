@@ -1,0 +1,3 @@
+// gobernanza.js
+// Governance & KRI Dashboard logic
+// ...

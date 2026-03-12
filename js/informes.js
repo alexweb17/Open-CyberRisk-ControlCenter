@@ -1,0 +1,3 @@
+// informes.js
+// Reporting and Critical Informes logic
+// ...
