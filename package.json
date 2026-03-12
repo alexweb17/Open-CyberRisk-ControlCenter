@@ -1,0 +1,23 @@
+{
+  "name": "cyber-risk-control-center",
+  "version": "1.1.0",
+  "description": "CyberRisk Control Center (CCC) - Platform for Risk GRC",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed:iso": "node scripts/seed_iso27001.js",
+    "seed:nist": "node scripts/seed_nist.js",
+    "seed:pci": "node scripts/seed_pcidss.js",
+    "seed:owasp": "node scripts/seed_owasp_asvs.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
