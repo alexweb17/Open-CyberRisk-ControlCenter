@@ -24,7 +24,7 @@ function renderUsersTable(data) {
             <td style="padding: 12px; font-weight: 600;">${u.name || 'N/A'}</td>
             <td style="padding: 12px;">${u.email}</td>
             <td style="padding: 12px;">
-                <select onchange="updateUserRole('${u._id}', this.value)" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: white; font-size: 0.9rem;">
+                <select onclick="event.stopPropagation()" onchange="event.stopPropagation(); updateUserRole('${u._id}', this.value)" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: white; font-size: 0.9rem;">
                     <option value="engineer" ${u.role === 'engineer' ? 'selected' : ''}>Engineer</option>
                     <option value="security_manager" ${u.role === 'security_manager' ? 'selected' : ''}>Security Manager</option>
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
@@ -134,11 +134,14 @@ async function handleUserSubmit(event) {
     const method = id ? 'PATCH' : 'POST';
     const url = id ? `/api/users/${id}` : '/api/users';
 
+    const payload = { name, email, role };
+    if (password) payload.password = password;
+
     try {
         const response = await cyberFetch(url, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, role })
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
