@@ -3,6 +3,7 @@ let localUser = null;
 let authToken = localStorage.getItem('cyberrisk_token');
 
 async function login(email, password) {
+    console.log("[AUTH] Attempting login for:", email);
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
@@ -25,7 +26,17 @@ async function login(email, password) {
             // Reload dashboard or data if needed
             if (typeof loadGovernanceData === 'function') loadGovernanceData();
         } else {
-            alert(data.error || "Error al iniciar sesión");
+            console.warn("[AUTH] Login failed:", data.error || "Unknown error");
+            const errorMessage = (response.status === 401 || response.status === 403) 
+                ? "ingresaste Credenciales incorrectas" 
+                : (data.error || "Error al iniciar sesión");
+            
+            // Priority for user feedback: Alert (for reliability on login overlay)
+            alert(errorMessage);
+            
+            if (typeof showNotification === 'function') {
+                showNotification(errorMessage, 'error');
+            }
         }
     } catch (err) {
         console.error("[AUTH] Login error:", err);
@@ -93,6 +104,11 @@ function applyRoleRestrictions() {
     if (!localUser) return;
 
     console.log(`[AUTH] Applying restrictions for role: ${localUser.role}`);
+
+    // First, hide everything to clear previous session state
+    document.querySelectorAll('.admin-only, .sm-only, .delete-btn').forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+    });
 
     // UI visibility logic (must use setProperty to override !important in CSS)
     if (localUser.role === 'admin') {
@@ -172,12 +188,22 @@ function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;
 
+    const icon = btn.querySelector('i.material-icons');
+
     if (input.type === 'password') {
         input.type = 'text';
-        btn.innerText = '🙈'; // Hide icon
+        if (icon) {
+            icon.innerText = 'visibility_off';
+        } else {
+            btn.innerText = '🙈'; // Hide icon
+        }
     } else {
         input.type = 'password';
-        btn.innerText = '👁️'; // Show icon
+        if (icon) {
+            icon.innerText = 'visibility';
+        } else {
+            btn.innerText = '👁️'; // Show icon
+        }
     }
 }
 

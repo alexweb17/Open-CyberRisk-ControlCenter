@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Initial data load
-    checkUser();
-    loadLocalData();
-    loadProjects();
+    if (typeof checkSession === 'function') checkSession();
+    if (typeof loadLocalData === 'function') loadLocalData();
+    if (typeof loadProjects === 'function') loadProjects();
 
     // Set default view
     showSection('proyectos');
@@ -158,10 +158,10 @@ window.closeAllModals = closeAllModals;
 window.getSeverityClass = getSeverityClass;
 
 // Auth
-window.login = login;
-window.logout = logout;
+window.login = typeof login !== 'undefined' ? login : window.login;
+window.logout = typeof logout !== 'undefined' ? logout : window.logout;
 window.cyberFetch = cyberFetch;
-window.checkUser = checkUser;
+window.checkUser = typeof checkSession !== 'undefined' ? checkSession : undefined;
 
 // Global fetch wrapper with identity headers
 async function cyberFetch(url, options = {}) {

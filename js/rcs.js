@@ -116,8 +116,14 @@ async function openRCSDetail(rcsId) {
         renderControlsList();
         updateRCSStats();
 
-        // Pre-load frameworks for the selector
-        loadFrameworksForRCS();
+        // Load metadata (frameworks and projects)
+        await Promise.all([
+            loadFrameworksForRCS(),
+            loadProjectsForRCS()
+        ]);
+
+        // Set selected project after loading
+        document.getElementById('rcs-detail-proyecto').value = rcs.proyecto_asociado || '';
 
     } catch (err) {
         console.error('Error loading RCS detail:', err);
@@ -129,6 +135,7 @@ async function openRCSDetail(rcsId) {
 async function saveRCSDetail() {
     const id = document.getElementById('rcs-detail-id').value;
     const data = {
+        proyecto_asociado: document.getElementById('rcs-detail-proyecto').value,
         responsable: document.getElementById('rcs-detail-responsable').value,
         estado: document.getElementById('rcs-detail-estado').value,
         comentarios_tecnicos: document.getElementById('rcs-detail-comentarios').value,
@@ -206,7 +213,34 @@ async function loadFrameworksForRCS() {
 
 
 
-// ============ CONTROL SEARCH ============
+async function loadProjectsForRCS() {
+    try {
+        const resp = await cyberFetch('/api/projects');
+        let projects = await resp.json();
+        const select = document.getElementById('rcs-detail-proyecto');
+        if (!select) return;
+
+        // Filter projects: only show projects assigned to the user unless admin/security_manager
+        if (localUser && localUser.role === 'engineer') {
+            projects = projects.filter(p => 
+                p.ingeniero_asignado === localUser.name || 
+                p.lider_proyecto === localUser.name || 
+                p.ingeniero_asignado === localUser.email || 
+                p.lider_proyecto === localUser.email
+            );
+        }
+
+        select.innerHTML = '<option value="">-- Seleccionar Proyecto --</option>';
+        projects.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.nombre; // We store the project name or ID? Schema says String.
+            opt.textContent = `${p.codigo_proyecto} - ${p.nombre}`;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        console.error('Error loading projects for RCS:', err);
+    }
+}
 
 async function searchControlsForRCS(query) {
     clearTimeout(searchTimeout);
