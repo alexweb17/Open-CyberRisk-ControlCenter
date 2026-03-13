@@ -1421,7 +1421,7 @@ app.get('/api/users', checkPerms(['admin']), async (req, res) => {
 });
 
 // Get engineers list (for project assignment)
-app.get('/api/users/engineers', checkPerms(['admin', 'security_manager']), async (req, res) => {
+app.get('/api/users/engineers', checkPerms(['admin', 'security_manager', 'engineer']), async (req, res) => {
     try {
         const engineers = await User.find({ role: 'engineer' })
             .select('name email _id')

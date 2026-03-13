@@ -34,6 +34,10 @@
             --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
@@ -42,7 +46,6 @@
             padding: 0;
             height: 100vh;
             width: 100vw;
-            box-sizing: border-box;
             overflow: hidden;
         }
 
@@ -216,7 +219,7 @@
         }
 
         .main-content {
-            padding: 24px;
+            padding: 24px 60px 24px 24px;
             overflow-y: auto;
             background-color: var(--bg-color);
             /* border-right: 1px solid var(--border-color); - removed for more space */
@@ -1893,8 +1896,6 @@
 
             <!-- RCS VIEW (Findings) -->
             <div id="rcs-view" class="view-section">
-                <!-- RCS LIST VIEW -->
-                <div id="rcs-list-view">
                     <main class="main-content">
                         <header
                             style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
@@ -1960,10 +1961,10 @@
                             </div>
                         </div>
                     </aside>
-                </div>
+            </div>
 
-                <!-- RCS DETAIL VIEW -->
-                <div id="rcs-detail-view" style="display: none;">
+            <!-- RCS DETAIL VIEW -->
+            <div id="rcs-detail-view" class="view-section">
                     <main class="main-content" style="padding: 0;">
                         <!-- Header with back button -->
                         <header
@@ -2176,7 +2177,6 @@
                         </div>
                     </aside>
                 </div>
-            </div>
 
             <!-- LINEAMIENTOS VIEW -->
             <div id="lineamientos-view" class="view-section">
@@ -2452,6 +2452,37 @@
                             Cancelar
                         </button>
                         <button onclick="confirmDeleteProject()"
+                            style="padding: 12px 24px; border: none; background: #B91C1C; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DELETE RCS MODAL -->
+            <div id="delete-rcs-modal" class="modal"
+                style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(29, 28, 26, 0.5); backdrop-filter: blur(6px);">
+                <div class="glass"
+                    style="max-width: 420px; margin: 120px auto; background: white; padding: 32px; border-radius: 16px; text-align: center;">
+                    <div
+                        style="width: 64px; height: 64px; margin: 0 auto 20px; background: #FEE2E2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 style="margin: 0 0 8px 0; font-size: 1.25rem; color: #1D1C1A;">Eliminar Registro</h3>
+                    <p id="delete-rcs-message" style="color: #6B6B6B; font-size: 0.9rem; margin-bottom: 24px;">
+                        ¿Está seguro que desea eliminar este registro de consultoría?
+                    </p>
+                    <input type="hidden" id="delete-rcs-id" value="">
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="closeDeleteRCSModal()"
+                            style="padding: 12px 24px; border: 1px solid #E5E5E5; background: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            Cancelar
+                        </button>
+                        <button onclick="confirmDeleteRCS()"
                             style="padding: 12px 24px; border: none; background: #B91C1C; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
                             Eliminar
                         </button>

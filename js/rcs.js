@@ -10,10 +10,17 @@ async function loadRCSData() {
     try {
         const resp = await cyberFetch('/api/rcs');
         const data = await resp.json();
-        rcsData = {};
-        data.forEach(r => { rcsData[r._id] = r; });
-        renderRCSTable(data);
-        document.getElementById('total-rcs-count').innerText = data.length;
+        
+        if (Array.isArray(data)) {
+            rcsData = {};
+            data.forEach(r => { rcsData[r._id] = r; });
+            renderRCSTable(data);
+            const countEl = document.getElementById('total-rcs-count');
+            if (countEl) countEl.innerText = data.length;
+        } else {
+            console.error('Expected array of RCS but got:', data);
+            renderRCSTable([]);
+        }
     } catch (err) {
         console.error('Error loading RCS data:', err);
     }
@@ -36,10 +43,17 @@ function renderRCSTable(data) {
                 <span style="background: #E5E7EB; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">${controlCount}</span>
             </td>
             <td style="padding: 16px;"><span style="background: ${estadoColor}15; color: ${estadoColor}; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">${r.estado}</span></td>
-            <td style="padding: 16px;">
-                <button data-rcs-action="delete" data-rcs-id="${r._id}" data-rcs-code="${r.codigo_rcs}"
-                    style="background: none; border: none; cursor: pointer; padding: 8px; color: #B91C1C;" title="Eliminar" onclick="event.stopPropagation();">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <td style="padding: 16px; text-align: center;">
+                <button type="button" 
+                    data-rcs-action="delete" data-rcs-id="${r._id}" data-rcs-code="${r.codigo_rcs}"
+                    style="background: none; border: none; cursor: pointer; padding: 12px; color: #B91C1C; transition: transform 0.2s;" 
+                    onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"
+                    onclick="event.stopPropagation(); openDeleteRCSModal('${r._id}', '${r.codigo_rcs}')"
+                    title="Eliminar">
+                    <svg style="pointer-events: none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
                 </button>
             </td>
         </tr>`;
@@ -56,8 +70,7 @@ function filterRCSTable() {
 }
 
 function showRCSList() {
-    document.getElementById('rcs-list-view').style.display = '';
-    document.getElementById('rcs-detail-view').style.display = 'none';
+    if (typeof showView === 'function') showView('rcs');
     currentRCSId = null;
     currentRCSControls = [];
     currentControlSource = 'marco_base';
@@ -65,8 +78,7 @@ function showRCSList() {
 }
 
 function showRCSDetail() {
-    document.getElementById('rcs-list-view').style.display = 'none';
-    document.getElementById('rcs-detail-view').style.display = '';
+    if (typeof showView === 'function') showView('rcs-detail');
 }
 
 async function createNewRCS() {
@@ -474,8 +486,21 @@ async function deleteRCS(rcsId) {
 }
 
 function openDeleteRCSModal(rcsId, rcsCode) {
-    if (confirm(`¿Está seguro que desea eliminar el registro ${rcsCode}?\n\nEsta acción no se puede deshacer.`)) {
+    document.getElementById('delete-rcs-id').value = rcsId;
+    document.getElementById('delete-rcs-message').innerText = `¿Está seguro que desea eliminar el registro ${rcsCode}?`;
+    document.getElementById('delete-rcs-modal').style.display = 'block';
+}
+
+function closeDeleteRCSModal() {
+    document.getElementById('delete-rcs-modal').style.display = 'none';
+    document.getElementById('delete-rcs-id').value = '';
+}
+
+function confirmDeleteRCS() {
+    const rcsId = document.getElementById('delete-rcs-id').value;
+    if (rcsId) {
         deleteRCS(rcsId);
+        closeDeleteRCSModal();
     }
 }
 
