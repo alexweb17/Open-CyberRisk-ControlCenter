@@ -1038,7 +1038,7 @@
                 <div style="position: relative; width: 100%;">
                     <input type="password" id="login-password" required placeholder="Contraseña"
                         style="padding: 12px; padding-right: 40px; border: 1px solid var(--border-color); border-radius: 8px; width: 100%; box-sizing: border-box;">
-                    <span id="toggle-password" onclick="togglePasswordVisibility()"
+                    <span id="toggle-password" onclick="togglePasswordVisibility('login-password', this)"
                         style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;">
                         <i class="material-icons" style="font-size: 20px;">visibility</i>
                     </span>
@@ -1061,17 +1061,6 @@
     </div>
 
     <script>
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('login-password');
-            const icon = document.querySelector('#toggle-password i');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.innerText = 'visibility_off';
-            } else {
-                passwordInput.type = 'password';
-                icon.innerText = 'visibility';
-            }
-        }
 
         function handleLoginForm(e) {
             e.preventDefault();
@@ -1215,7 +1204,7 @@
                     style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; font-size: 1rem; display: none;">
                     🔑
                 </button>
-                <button id="login-btn" class="btn-primary" style="display: none;" onclick="login()">Login</button>
+
                 <button id="logout-btn" class="btn-primary"
                     style="width: auto; padding: 6px 12px; font-size: 0.75rem; display: none;"
                     onclick="logout()">Logout</button>
@@ -2015,6 +2004,13 @@
 
 
                                 <div style="margin-bottom: 20px;">
+                                    <div class="label">Proyecto Asociado</div>
+                                    <select id="rcs-detail-proyecto">
+                                        <option value="">-- Seleccionar Proyecto --</option>
+                                    </select>
+                                </div>
+
+                                <div style="margin-bottom: 20px;">
                                     <div class="label">Responsable</div>
                                     <input type="text" id="rcs-detail-responsable" placeholder="Nombre del responsable">
                                 </div>
@@ -2339,8 +2335,10 @@
                             </div>
                             <div>
                                 <label class="label" for="project-ingeniero">Ingeniero Asignado</label>
-                                <input type="text" id="project-ingeniero" name="ingeniero_asignado"
+                                <select id="project-ingeniero" name="ingeniero_asignado"
                                     style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                                    <option value="">-- Seleccionar Ingeniero --</option>
+                                </select>
                             </div>
                         </div>
 
@@ -3581,7 +3579,7 @@
         <script src="js/informes.js"></script>
         <script src="js/procesos.js"></script>
         <script src="js/gobernanza.js"></script>
-        <script src="js/auth.js"></script>
+
         <script src="js/marcos.js"></script>
         <script src="js/main.js"></script>
         <script src="js/users.js"></script>

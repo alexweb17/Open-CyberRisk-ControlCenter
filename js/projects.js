@@ -151,7 +151,9 @@ function openProjectModal(projectId = null) {
     form.reset();
     document.getElementById('project-id').value = '';
 
-    if (projectId) {
+    // Load engineers list before setting value
+    loadEngineersForProjectModal().then(() => {
+        if (projectId) {
         const project = allProjects.find(p => p._id === projectId);
         if (project) {
             title.innerText = 'Editar Proyecto';
@@ -167,6 +169,7 @@ function openProjectModal(projectId = null) {
     } else {
         title.innerText = 'Nuevo Proyecto';
     }
+    });
 
     modal.style.display = 'block';
 }
@@ -234,5 +237,25 @@ async function confirmDeleteProject() {
         }
     } catch (err) {
         alert('Error de conexión');
+    }
+}
+async function loadEngineersForProjectModal() {
+    try {
+        const resp = await cyberFetch('/api/users/engineers');
+        if (!resp.ok) return;
+
+        const engineers = await resp.json();
+        const select = document.getElementById('project-ingeniero');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">-- Seleccionar Ingeniero --</option>';
+        engineers.forEach(eng => {
+            const opt = document.createElement('option');
+            opt.value = eng.name; // Storing name as string to match schema
+            opt.textContent = `${eng.name} (${eng.email})`;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        console.error('Error loading engineers:', err);
     }
 }

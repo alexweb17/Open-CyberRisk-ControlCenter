@@ -1420,6 +1420,19 @@ app.get('/api/users', checkPerms(['admin']), async (req, res) => {
     }
 });
 
+// Get engineers list (for project assignment)
+app.get('/api/users/engineers', checkPerms(['admin', 'security_manager']), async (req, res) => {
+    try {
+        const engineers = await User.find({ role: 'engineer' })
+            .select('name email _id')
+            .sort({ name: 1 });
+        res.json(engineers);
+    } catch (err) {
+        console.error("GET /api/users/engineers Error:", err);
+        res.status(500).json({ error: "Error al recuperar ingenieros" });
+    }
+});
+
 app.patch('/api/users/:id/role', checkPerms(['admin']), async (req, res) => {
     try {
         const { role } = req.body;
