@@ -55,7 +55,7 @@ async function updateUserRole(userId, newRole) {
     }
 
     try {
-        const response = await cyberFetch(`/api/users/${userId}/role`, {
+        const response = await cyberFetch(`/api/users/${userId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ role: newRole })
