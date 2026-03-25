@@ -6,13 +6,19 @@ const FrameworkRequirement = require('../models/FrameworkRequirement');
 
 dotenv.config();
 
-// Load the parsed NIST controls from the temp file
-const nistDataFile = '/tmp/nist_parsed.json';
+const { parseNIST } = require('./utils/mdParser');
+const path = require('path');
+
+dotenv.config();
+
+// Path to the NIST Markdown file
+const nistMarkdownFile = path.join(__dirname, '../Biblioteca de Marcos/NIST _SP800-53.md');
 let nistControls = [];
 try {
-    nistControls = JSON.parse(fs.readFileSync(nistDataFile, 'utf8'));
+    nistControls = parseNIST(nistMarkdownFile);
+    console.log(`Parsed ${nistControls.length} controls from Markdown.`);
 } catch (err) {
-    console.error('Error reading the parsed NIST controls file:', err);
+    console.error('Error parsing the NIST Markdown file:', err);
     process.exit(1);
 }
 
