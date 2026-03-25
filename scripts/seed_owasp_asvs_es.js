@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const path = require('path');
+const { parseASVS } = require('./utils/mdParser');
 const Framework = require('../models/Framework');
 const FrameworkRequirement = require('../models/FrameworkRequirement');
 
@@ -18,13 +20,16 @@ async function seedOWASP() {
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ccc_system');
         console.log("Conectado a MongoDB para seeding de OWASP ASVS (Español)...");
 
-        // Load translated requirements
-        const translatedFile = '/tmp/owasp_parsed_es.json';
-        if (!fs.existsSync(translatedFile)) {
-            console.error("No se encontró el archivo de traducción de OWASP.");
+        // Load translated requirements from Markdown
+        const asvsMarkdownFile = path.join(__dirname, '../Biblioteca de Marcos/ASVS_OWASP.md');
+        let requirements = [];
+        try {
+            requirements = parseASVS(asvsMarkdownFile);
+            console.log(`Parsed ${requirements.length} controls from ASVS Markdown.`);
+        } catch (err) {
+            console.error('Error parsing the ASVS Markdown file:', err);
             process.exit(1);
         }
-        const requirements = JSON.parse(fs.readFileSync(translatedFile, 'utf8'));
 
         let framework = await Framework.findOne({ name: frameworkInfo.name });
         

@@ -6,18 +6,19 @@ const FrameworkRequirement = require('../models/FrameworkRequirement');
 
 dotenv.config();
 
-// Load the parsed NIST controls from the temp file (Spanish version)
-const nistDataFile = '/tmp/nist_parsed_es.json';
+const { parseNIST } = require('./utils/mdParser');
+const path = require('path');
+
+dotenv.config();
+
+// Path to the NIST Markdown file
+const nistMarkdownFile = path.join(__dirname, '../Biblioteca de Marcos/NIST _SP800-53.md');
 let nistControls = [];
 try {
-    if (fs.existsSync(nistDataFile)) {
-        nistControls = JSON.parse(fs.readFileSync(nistDataFile, 'utf8'));
-    } else {
-        console.error('El archivo de traducción NIST aún no existe.');
-        process.exit(1);
-    }
+    nistControls = parseNIST(nistMarkdownFile);
+    console.log(`Parsed ${nistControls.length} controls from Markdown.`);
 } catch (err) {
-    console.error('Error al leer el archivo de controles NIST traducidos:', err);
+    console.error('Error parsing the NIST Markdown file:', err);
     process.exit(1);
 }
 
