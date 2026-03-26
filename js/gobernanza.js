@@ -457,6 +457,15 @@ async function handleObjectiveSubmit(e) {
         description: document.getElementById('objective-desc').value
     };
 
+    if (!formData.name || !formData.department) {
+        if (typeof showNotification === 'function') {
+            showNotification('Nombre y Departamento son obligatorios.', 'warning');
+        } else {
+            alert('Nombre y Departamento son obligatorios.');
+        }
+        return;
+    }
+
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/governance/objectives/${id}` : '/api/governance/objectives';
@@ -512,7 +521,14 @@ async function handleKRISubmit(e) {
         threshold_warning: parseFloat(document.getElementById('kri-warning').value),
         threshold_critical: parseFloat(document.getElementById('kri-critical').value),
         current_value: parseFloat(document.getElementById('kri-current').value || 0)
-    };
+    if (!formData.name || isNaN(formData.threshold_critical)) {
+        if (typeof showNotification === 'function') {
+            showNotification('Verifique el nombre y los umbrales del KRI.', 'warning');
+        } else {
+            alert('Verifique el nombre y los umbrales del KRI.');
+        }
+        return;
+    }
 
     try {
         const method = id ? 'PUT' : 'POST';

@@ -154,6 +154,15 @@ async function saveRCSDetail() {
         fecha_limite: document.getElementById('rcs-detail-fecha').value || null
     };
 
+    if (!data.responsable || !data.estado) {
+        if (typeof showNotification === 'function') {
+            showNotification('El responsable y el estado son campos obligatorios.', 'warning');
+        } else {
+            alert('El responsable y el estado son campos obligatorios.');
+        }
+        return;
+    }
+
     try {
         const resp = await cyberFetch(`/api/rcs/${id}`, {
             method: 'PUT',
