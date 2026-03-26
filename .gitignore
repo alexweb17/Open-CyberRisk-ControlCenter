@@ -26,3 +26,7 @@ import_controls.js
 check_columns.py
 ListaControles/
 Tablas de Sharepoint/
+
+# Sensitive files
+.env
+
