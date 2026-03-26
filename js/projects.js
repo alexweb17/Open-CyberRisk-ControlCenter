@@ -191,6 +191,15 @@ async function handleProjectSubmit(e) {
         estado: document.getElementById('project-estado').value
     };
 
+    if (!data.nombre || !data.lider_proyecto || !data.ingeniero_asignado) {
+        if (typeof showNotification === 'function') {
+            showNotification('Nombre, Líder e Ingeniero son obligatorios.', 'warning');
+        } else {
+            alert('Nombre, Líder e Ingeniero son obligatorios.');
+        }
+        return;
+    }
+
     try {
         const url = projectId ? `/api/projects/${projectId}` : '/api/projects';
         const method = projectId ? 'PUT' : 'POST';

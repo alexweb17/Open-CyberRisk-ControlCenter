@@ -186,7 +186,7 @@ app.post('/api/auth/signup', async (req, res) => {
         });
     } catch (err) {
         console.error("[SIGNUP ERROR]", err);
-        res.status(400).json({ error: err.message });
+        res.status(400).json({ error: "No se pudo crear el usuario. Verifique los datos." });
     }
 });
 
@@ -362,7 +362,7 @@ app.post('/api/master-controls', checkPerms(['security_manager', 'admin']), asyn
         res.status(201).json({ message: "Control maestro agregado", data: newControl });
     } catch (err) {
         console.error("POST /api/master-controls Error:", err);
-        res.status(400).json({ error: "Error al agregar control", details: err.message });
+        res.status(400).json({ error: "Error al procesar la solicitud del control maestro." });
     }
 });
 
@@ -397,7 +397,7 @@ app.put('/api/master-controls/:id', checkPerms(['security_manager', 'admin']), a
         res.json({ message: "Control actualizado", data: updatedControl });
     } catch (err) {
         console.error("PUT /api/master-controls Error:", err);
-        res.status(400).json({ error: "Error al actualizar control", details: err.message });
+        res.status(400).json({ error: "Error al actualizar el control maestro." });
     }
 });
 
@@ -417,7 +417,8 @@ app.delete('/api/master-controls/:id', checkPerms(['security_manager', 'admin'])
 
         res.json({ message: "Control eliminado" });
     } catch (err) {
-        res.status(500).json({ error: "Error al eliminar control", details: err.message });
+        console.error("DELETE /api/master-controls Error:", err);
+        res.status(500).json({ error: "No se pudo eliminar el control maestro." });
     }
 });
 
@@ -428,7 +429,8 @@ app.post('/api/findings', async (req, res) => {
         await newFinding.save();
         res.status(201).json({ message: "Hallazgo registrado", data: newFinding });
     } catch (err) {
-        res.status(400).json({ error: "Datos inválidos", details: err.message });
+        console.error("POST /api/findings Error:", err);
+        res.status(400).json({ error: "Error al registrar el hallazgo." });
     }
 });
 
@@ -490,6 +492,11 @@ app.get('/api/projects', async (req, res) => {
 // POST new project
 app.post('/api/projects', async (req, res) => {
     try {
+        const { nombre, lider_proyecto, ingeniero_asignado } = req.body;
+        if (!nombre || !lider_proyecto || !ingeniero_asignado) {
+            return res.status(400).json({ error: "Faltan campos obligatorios para el proyecto." });
+        }
+
         req.body.codigo_proyecto = await getNextProjectCode(req.body.area);
         const newProject = new Project(req.body);
         await newProject.save();
@@ -504,7 +511,7 @@ app.post('/api/projects', async (req, res) => {
         res.status(201).json({ message: "Proyecto creado", data: newProject });
     } catch (err) {
         console.error("POST /api/projects Error:", err);
-        res.status(400).json({ error: "Error al crear proyecto", details: err.message });
+        res.status(400).json({ error: "Error al crear el proyecto. Verifique los campos obligatorios." });
     }
 });
 
@@ -539,7 +546,8 @@ app.put('/api/projects/:id', async (req, res) => {
         );
         res.json({ message: "Proyecto actualizado", data: updatedProject });
     } catch (err) {
-        res.status(400).json({ error: "Error al actualizar proyecto", details: err.message });
+        console.error("PUT /api/projects Error:", err);
+        res.status(400).json({ error: "Error al actualizar el proyecto." });
     }
 });
 
@@ -558,7 +566,8 @@ app.delete('/api/projects/:id', checkPerms(['security_manager', 'admin']), async
 
         res.json({ message: "Proyecto eliminado" });
     } catch (err) {
-        res.status(500).json({ error: "Error al eliminar proyecto", details: err.message });
+        console.error("DELETE /api/projects Error:", err);
+        res.status(500).json({ error: "Error al eliminar el proyecto." });
     }
 });
 
@@ -676,6 +685,11 @@ app.get('/api/rcs', async (req, res) => {
 // POST new RCS entry
 app.post('/api/rcs', async (req, res) => {
     try {
+        const { responsable } = req.body;
+        if (!responsable) {
+            return res.status(400).json({ error: "El responsable es obligatorio." });
+        }
+        
         req.body.codigo_rcs = await getNextRCSCode();
         const newRCS = new RCS(req.body);
         await newRCS.save();
@@ -690,7 +704,7 @@ app.post('/api/rcs', async (req, res) => {
         res.status(201).json({ message: "RCS creado", data: newRCS });
     } catch (err) {
         console.error("POST /api/rcs Error:", err);
-        res.status(400).json({ error: "Error al crear RCS", details: err.message });
+        res.status(400).json({ error: "Error al crear el registro RCS." });
     }
 });
 
@@ -713,7 +727,8 @@ app.put('/api/rcs/:id', async (req, res) => {
 
         res.json({ message: "RCS actualizado", data: updatedRCS });
     } catch (err) {
-        res.status(400).json({ error: "Error al actualizar RCS", details: err.message });
+        console.error("PUT /api/rcs Error:", err);
+        res.status(400).json({ error: "Error al actualizar el registro RCS." });
     }
 });
 
@@ -737,7 +752,8 @@ app.delete('/api/rcs/:id', async (req, res) => {
 
         res.json({ message: "RCS eliminado", codigo: rcs.codigo_rcs });
     } catch (err) {
-        res.status(500).json({ error: "Error al eliminar RCS", details: err.message });
+        console.error("DELETE /api/rcs Error:", err);
+        res.status(500).json({ error: "Error al eliminar el registro RCS." });
     }
 });
 
@@ -783,7 +799,8 @@ app.get('/api/rcs/:id', async (req, res) => {
             controles_asociados: enrichedControls
         });
     } catch (err) {
-        res.status(500).json({ error: "Error al obtener RCS", details: err.message });
+        console.error("GET /api/rcs/:id Error:", err);
+        res.status(500).json({ error: "Error al recuperar el registro de riesgos." });
     }
 });
 
