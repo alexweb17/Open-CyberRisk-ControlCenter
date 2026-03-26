@@ -81,14 +81,14 @@ bash install.sh
    ```
 
 3. **Configure Environment:**
-   Create a `.env` file:
-   ```env
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_secure_secret_key
-   PORT=3000
+   Copy the example environment file and update it with your own values:
+   ```bash
+   cp .env.example .env
    ```
+   *Note: Ensure `.env` is updated with your MongoDB connection string and a secure `JWT_SECRET`.*
 
 4. **Seed the database (regulatory frameworks):**
+   This repository includes automated scripts in the `scripts/` directory to load pre-configured security frameworks (ISO 27001, NIST, OWASP ASVS, PCI DSS):
    ```bash
    node scripts/seed_master_es.js
    ```
@@ -107,11 +107,20 @@ bash install.sh
 | [🔧 Guía para Desarrolladores](docs/DEVELOPER_GUIDE.md) | Architecture, API endpoints, seeding process, data model, and code conventions |
 | [📚 Biblioteca de Marcos](Biblioteca%20de%20Marcos/) | Source Markdown files for regulatory frameworks (NIST, OWASP ASVS, ISO 27001) |
 
+## 🤝 Contributing
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 ## 📜 License
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## 👤 Author
-**alexweb17** - *Design & Implementation*
+**Alex Arana Northia** - *Design & Implementation*
 
 ---
 *Developed with focus on efficiency and security excellence.*
