@@ -26,7 +26,6 @@
     "google-translate-api-x": "^10.6.9",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
-    "multer": "^2.0.2",
-    "xlsx": "^0.18.5"
+    "multer": "^2.0.2"
   }
 }
