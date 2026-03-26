@@ -13,6 +13,7 @@ key.pem
 SGRT.code-workspace
 
 # Large or temporary data files
+node_modules/
 headers_utf8.txt
 package-lock.json
 
