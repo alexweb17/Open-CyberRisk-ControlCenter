@@ -13,6 +13,8 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('./authConfig');
+
 const User = require('./models/User');
 const MasterControl = require('./models/MasterControl');
 const AuditLog = require('./models/AuditLog');
@@ -108,8 +110,8 @@ if (!fs.existsSync(uploadDir)) {
 
 // JWT Helper: Create and sign token
 const signToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN
+    return jwt.sign({ id }, JWT_SECRET, {
+        expiresIn: JWT_EXPIRES_IN
     });
 };
 
@@ -128,7 +130,7 @@ async function protect(req, res, next) {
 
     try {
         // 2. Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
 
         // 3. Check if user still exists
         const currentUser = await User.findById(decoded.id);
