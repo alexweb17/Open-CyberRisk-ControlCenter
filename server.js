@@ -439,17 +439,15 @@ app.post('/api/findings', async (req, res) => {
 // Area abbreviations for project codes
 const AREA_ABBREV = {
     'Auditoría': 'AUD',
-    'Comercial Venta Directa': 'CVD',
-    'Comercial Venta Indirecta': 'CVI',
-    'Financiero Administrativo': 'FIN',
-    'Jurídico': 'JUR',
+    'Comercial': 'CVD',
+    'Finanzas': 'FIN',
+    'Legal': 'LEG',
     'Marketing': 'MKT',
     'Operaciones': 'OPE',
-    'Regulatorio': 'REG',
-    'Relaciones Institucionales y Sustentabilidad': 'RIS',
-    'Servicios y Customer Care': 'SCC',
+    'Sostenibilidad, Relaciones Institucionales y Cuidado Ambiental': 'SRC',
+    'Servicio al Cliente': 'SAC',
     'Talento Humano': 'THU',
-    'Tecnología Información y Comunicación': 'TIC'
+    'Tecnología de la Información': 'TIC'
 };
 
 // Generate project code: PROY-AREA-XXX-YYYY
