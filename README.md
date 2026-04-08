@@ -1,138 +1,138 @@
-# 🛡️ CyberRisk Control Center (CCC)
+# 🛡️ OpenCyberRisk Control Center (OCCC)
 
-![CyberRisk Control Center](imagenes/logoCCC.png)
+![OpenCyberRisk Control Center](imagenes/logoCCC.png)
 
-## Overview
-CyberRisk Control Center (CCC) is a comprehensive, open-source platform designed to streamline cybersecurity risk management, regulatory compliance, and governance. Built for security managers, engineers, and administrators, it provides a centralized dashboard to track risks, manage controls, and ensure alignment with global security standards.
+## Descripción General
+OpenCyberRisk Control Center (OCCC) es una plataforma integral de código abierto diseñada para optimizar la gestión de riesgos de ciberseguridad, el cumplimiento regulatorio y la gobernanza. Pensada para gerentes de seguridad, ingenieros y administradores, ofrece un panel centralizado para rastrear riesgos, gestionar controles y asegurar la alineación con estándares internacionales de seguridad.
 
 > **SGRT – Sistema de Gobernanza de Riesgo Tecnológico**
 
-## 🚀 Key Features
+## 🚀 Características Principales
 
 ### 📊 Gobernanza & Directorio
-Strategic alignment and financial quantification of technology risk using the **FAIR methodology**. Monitor **Key Risk Indicators (KRIs)**, **Annualized Loss Expectancy (ALE)**, and strategic objectives in real-time.
+Alineación estratégica y cuantificación financiera del riesgo tecnológico mediante la **metodología FAIR**. Monitoreo en tiempo real de **Indicadores Clave de Riesgo (KRI)**, **Expectativa de Pérdida Anualizada (ALE)** y objetivos estratégicos.
 
 ![Gobernanza & Directorio](docs/screenshots/03_gobernanza.png)
 
 ### 🔥 Riesgos Tecnológicos
-Executive risk analysis with heat maps, severity distribution charts, and critical/oldest risk tracking to prioritize remediation efforts.
+Análisis ejecutivo de riesgos con mapas de calor, gráficos de distribución por severidad y seguimiento de riesgos críticos/más antiguos para priorizar los esfuerzos de remediación.
 
 ![Riesgos Tecnológicos](docs/screenshots/04_riesgos.png)
 
 ### 📁 Proyectos de Ciberseguridad
-Modern compliance dashboard to track security projects, open findings, and global compliance percentage. Includes an AI-powered **Risk Advisor** (Vertex AI).
+Panel moderno de cumplimiento para dar seguimiento a proyectos de seguridad, hallazgos abiertos y porcentaje de cumplimiento global. Incluye un **Asesor de Riesgos** potenciado por IA (Vertex AI).
 
 ![Proyectos](docs/screenshots/02_proyectos.png)
 
 ### 🔍 Consultorías (RCS)
-Risk Control Self-assessment registry for managing findings and tracking control remediation from security consultancies.
+Registro de Autoevaluación de Controles de Riesgo para gestionar hallazgos y dar seguimiento a la remediación de controles derivados de consultorías de seguridad.
 
 ### 📚 Biblioteca de Marcos Regulatorios
-Integrated repository with international compliance standards:
-- **ISO/IEC 27001:2022** – Information Security Management Systems (ISMS)
-- **NIST SP 800-53 Rev. 5** – 313+ Security & Privacy Controls
-- **OWASP ASVS 5.0.0** – 341+ Application Security Requirements
-- **PCI DSS v4.0** – Payment Card Industry Data Security Standard
+Repositorio integrado con estándares internacionales de cumplimiento:
+- **ISO/IEC 27001:2022** – Sistemas de Gestión de Seguridad de la Información (SGSI)
+- **NIST SP 800-53 Rev. 5** – 313+ Controles de Seguridad y Privacidad
+- **OWASP ASVS 5.0.0** – 341+ Requisitos de Seguridad en Aplicaciones
+- **PCI DSS v4.0** – Estándar de Seguridad de Datos para la Industria de Tarjetas de Pago
 
 ![Biblioteca de Marcos](docs/screenshots/06_marcos.png)
 
 ### ⚠️ Informes Críticos L3
-Manage critical security incidents and vulnerabilities that represent significant financial risk to the organization.
+Gestión de incidentes y vulnerabilidades críticas de seguridad que representan un riesgo financiero significativo para la organización.
 
 ### ⚙️ Procesos de Negocio
-Business process risk evaluation with financial quantification (FAIR-lite: Asset Value × Exposure Factor × Annualized Rate of Occurrence = ALE).
+Evaluación de riesgos en procesos de negocio con cuantificación financiera (FAIR-lite: Valor del Activo × Factor de Exposición × Tasa Anualizada de Ocurrencia = ALE).
 
 ### 🔐 Seguridad
-- **Role-Based Access Control (RBAC)**: Admin, Security Manager, Engineer.
-- **JWT Authentication** with bcrypt password hashing.
-- **HTTPS** communication with TLS certificates.
+- **Control de Acceso Basado en Roles (RBAC)**: Admin, Security Manager, Engineer.
+- **Autenticación JWT** con hash de contraseñas mediante bcrypt.
+- **Comunicación HTTPS** con certificados TLS.
 
-## 🛠️ Tech Stack
-| Layer | Technology |
+## 🛠️ Stack Tecnológico
+| Capa | Tecnología |
 |---|---|
 | **Frontend** | HTML5, CSS3 (Glassmorphism), Vanilla JavaScript (SPA) |
 | **Backend** | Node.js + Express.js |
-| **Database** | MongoDB + Mongoose ODM |
-| **Auth** | JWT + bcryptjs |
-| **AI** | Vertex AI (Risk Advisor) |
+| **Base de Datos** | MongoDB + Mongoose ODM |
+| **Autenticación** | JWT + bcryptjs |
+| **IA** | Vertex AI (Asesor de Riesgos) |
 
-## 📦 Quick Installation
+## 📦 Instalación Rápida
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v16.x or higher)
-- [MongoDB](https://www.mongodb.com/) (Local instance or Atlas connection string)
+### Requisitos Previos
+- [Node.js](https://nodejs.org/) (v16.x o superior)
+- [MongoDB](https://www.mongodb.com/) (Instancia local o cadena de conexión Atlas)
 - [Git](https://git-scm.com/)
 
-### One-Step Setup (Linux/macOS)
+### Instalación en un paso (Linux/macOS)
 ```bash
 bash install.sh
 ```
 
-### Manual Installation
-1. **Clone the repository:**
+### Instalación Manual
+1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/alexweb17/CyberRiskControlCenter.git
-   cd CyberRiskControlCenter
+   git clone https://github.com/alexweb17/Open-CyberRisk-ControlCenter.git
+   cd Open-CyberRisk-ControlCenter
    ```
 
-2. **Install dependencies:**
+2. **Instalar dependencias:**
    ```bash
    npm install
    ```
 
-3. **Configure Environment:**
-   Copy the example environment file and update it with your own values:
+3. **Configurar Variables de Entorno:**
+   Copia el archivo de ejemplo y actualiza los valores con los tuyos:
    ```bash
    cp .env.example .env
    ```
-   *Note: Ensure `.env` is updated with your MongoDB connection string and a secure `JWT_SECRET`.*
+   *Nota: Asegúrate de actualizar `.env` con tu cadena de conexión MongoDB y un `JWT_SECRET` seguro.*
 
-4. **Seed the database (regulatory frameworks):**
-   This repository includes automated scripts in the `scripts/` directory to load pre-configured security frameworks (ISO 27001, NIST, OWASP ASVS, PCI DSS):
+4. **Poblar la base de datos (marcos regulatorios):**
+   Este repositorio incluye scripts automatizados en el directorio `scripts/` para cargar los marcos de seguridad preconfigurados (ISO 27001, NIST, OWASP ASVS, PCI DSS):
    ```bash
    node scripts/seed_master_es.js
    ```
 
-5. **Run the application:**
+5. **Ejecutar la aplicación:**
    ```bash
    npm start
    ```
-   Access the UI at `https://localhost:3000`.
+   Accede a la interfaz en `https://localhost:3000`.
 
-## 🔑 First Login
+## 🔑 Primer Inicio de Sesión
 
-On the **first startup**, if no users exist in the database, the server automatically creates a default administrator account:
+Al **iniciar el servidor por primera vez**, si no existen usuarios en la base de datos, se crea automáticamente una cuenta de administrador por defecto:
 
-| Field | Value |
+| Campo | Valor |
 |---|---|
 | **Email** | `admin@occc.local` |
-| **Password** | `OpenCyberRisk2026!` |
-| **Role** | `admin` |
+| **Contraseña** | `OpenCyberRisk2026!` |
+| **Rol** | `admin` |
 
-> ⚠️ **IMPORTANT:** Change the default password immediately after your first login via the user profile menu (🔒 icon).
+> ⚠️ **IMPORTANTE:** Cambia la contraseña por defecto inmediatamente después de tu primer inicio de sesión desde el menú de perfil de usuario (icono 🔒).
 
-## 📖 Documentation
+## 📖 Documentación
 
-| Document | Description |
+| Documento | Descripción |
 |---|---|
-| [📖 Manual de Usuario](docs/MANUAL.md) | Complete user manual with screenshots and cybersecurity concept explanations (KRI, ALE, ISO, OWASP, PCI DSS, L3 Reports, etc.) |
-| [🔧 Guía para Desarrolladores](docs/DEVELOPER_GUIDE.md) | Architecture, API endpoints, seeding process, data model, and code conventions |
-| [📚 Biblioteca de Marcos](Biblioteca%20de%20Marcos/) | Source Markdown files for regulatory frameworks (NIST, OWASP ASVS, ISO 27001) |
+| [📖 Manual de Usuario](docs/MANUAL.md) | Manual completo con capturas de pantalla y explicaciones de conceptos de ciberseguridad (KRI, ALE, ISO, OWASP, PCI DSS, Informes L3, etc.) |
+| [🔧 Guía para Desarrolladores](docs/DEVELOPER_GUIDE.md) | Arquitectura, endpoints API, proceso de seed, modelo de datos y convenciones de código |
+| [📚 Biblioteca de Marcos](Biblioteca%20de%20Marcos/) | Archivos fuente Markdown de marcos regulatorios (NIST, OWASP ASVS, ISO 27001) |
 
-## 🤝 Contributing
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+## 🤝 Contribuciones
+Las contribuciones son lo que hacen de la comunidad open-source un lugar increíble para aprender, inspirar y crear. Cualquier contribución que hagas será **enormemente apreciada**.
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Haz un Fork del proyecto
+2. Crea tu rama de funcionalidad (`git checkout -b feature/MiFuncionalidad`)
+3. Haz commit de tus cambios (`git commit -m 'Agregar MiFuncionalidad'`)
+4. Haz Push a la rama (`git push origin feature/MiFuncionalidad`)
+5. Abre un Pull Request
 
-## 📜 License
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+## 📜 Licencia
+Este proyecto está bajo la **Licencia MIT** – consulta el archivo [LICENSE](LICENSE) para más detalles.
 
-## 👤 Author
-**Alex Arana Northia** - *Design & Implementation*
+## 👤 Autor
+**Alex Arana Northia** - *Diseño e Implementación*
 
 ---
-*Developed with focus on efficiency and security excellence.*
+*Desarrollado con enfoque en eficiencia y excelencia en seguridad.*
