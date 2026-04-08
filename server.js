@@ -75,8 +75,30 @@ const mongoUri = process.env.MONGO_URI || `mongodb://localhost:27017/ccc_system`
 const maskedUri = mongoUri.replace(/:([^@]+)@/, ':****@');
 console.log(`Intentando conectar a DB: ${maskedUri}`);
 
+// Auto-seed: Create default admin user on first run (if no users exist)
+async function seedAdminUser() {
+    try {
+        const count = await User.countDocuments();
+        if (count === 0) {
+            await User.create({
+                name: 'Administrador OCCC',
+                email: 'admin@occc.local',
+                password: 'OpenCyberRisk2026!',
+                role: 'admin'
+            });
+            console.log('🔑 Usuario admin inicial creado: admin@occc.local / OpenCyberRisk2026!');
+            console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer inicio de sesión.');
+        }
+    } catch (err) {
+        console.error('Error al crear usuario admin inicial:', err.message);
+    }
+}
+
 mongoose.connect(mongoUri)
-    .then(() => console.log("Conectado a MongoDB - Cerebro CCC Operativo"))
+    .then(async () => {
+        console.log("Conectado a MongoDB - Cerebro CCC Operativo");
+        await seedAdminUser();
+    })
     .catch(err => {
         console.error("Error de conexión CCC:", err.message);
         console.error("Asegúrate de que MongoDB esté corriendo y que las credenciales sean correctas.");

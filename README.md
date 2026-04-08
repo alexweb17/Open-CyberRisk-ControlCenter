@@ -99,6 +99,18 @@ bash install.sh
    ```
    Access the UI at `https://localhost:3000`.
 
+## 🔑 First Login
+
+On the **first startup**, if no users exist in the database, the server automatically creates a default administrator account:
+
+| Field | Value |
+|---|---|
+| **Email** | `admin@occc.local` |
+| **Password** | `OpenCyberRisk2026!` |
+| **Role** | `admin` |
+
+> ⚠️ **IMPORTANT:** Change the default password immediately after your first login via the user profile menu (🔒 icon).
+
 ## 📖 Documentation
 
 | Document | Description |
