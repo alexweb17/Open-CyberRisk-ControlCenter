@@ -150,6 +150,9 @@ function openProjectModal(projectId = null) {
 
     form.reset();
     document.getElementById('project-id').value = '';
+    
+    const fileList = document.getElementById('project-files-list');
+    if (fileList) fileList.innerHTML = '';
 
     // Load engineers list before setting value
     loadEngineersForProjectModal().then(() => {
@@ -181,17 +184,11 @@ function closeProjectModal() {
 async function handleProjectSubmit(e) {
     e.preventDefault();
     const projectId = document.getElementById('project-id').value;
-    const data = {
-        nombre: document.getElementById('project-nombre').value,
-        descripcion: document.getElementById('project-descripcion').value,
-        lider_proyecto: document.getElementById('project-lider').value,
-        ingeniero_asignado: document.getElementById('project-ingeniero').value,
-        area: document.getElementById('project-area').value,
-        fecha_solicitud: document.getElementById('project-fecha-solicitud').value || null,
-        estado: document.getElementById('project-estado').value
-    };
+    const nombre = document.getElementById('project-nombre').value;
+    const lider = document.getElementById('project-lider').value;
+    const ingeniero = document.getElementById('project-ingeniero').value;
 
-    if (!data.nombre || !data.lider_proyecto || !data.ingeniero_asignado) {
+    if (!nombre || !lider || !ingeniero) {
         if (typeof showNotification === 'function') {
             showNotification('Nombre, Líder e Ingeniero son obligatorios.', 'warning');
         } else {
@@ -204,15 +201,34 @@ async function handleProjectSubmit(e) {
         const url = projectId ? `/api/projects/${projectId}` : '/api/projects';
         const method = projectId ? 'PUT' : 'POST';
 
+        const formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('descripcion', document.getElementById('project-descripcion').value);
+        formData.append('lider_proyecto', lider);
+        formData.append('ingeniero_asignado', ingeniero);
+        formData.append('area', document.getElementById('project-area').value);
+        formData.append('fecha_solicitud', document.getElementById('project-fecha-solicitud').value || '');
+        formData.append('estado', document.getElementById('project-estado').value);
+
+        const fileInput = document.getElementById('project-files');
+        if (fileInput && fileInput.files.length > 0) {
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('archivos', fileInput.files[i]);
+            }
+        }
+
         const resp = await cyberFetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            // Do NOT set Content-Type header when using FormData, browser will set it with boundary
+            body: formData
         });
 
         if (resp.ok) {
             closeProjectModal();
             await loadProjects();
+            if (typeof showNotification === 'function') {
+                showNotification(projectId ? 'Proyecto actualizado' : 'Proyecto creado');
+            }
         } else {
             const err = await resp.json();
             alert('Error: ' + (err.error || 'Desconocido'));
@@ -222,6 +238,26 @@ async function handleProjectSubmit(e) {
         alert('Error de conexión');
     }
 }
+
+function handleProjectFiles(input) {
+    const list = document.getElementById('project-files-list');
+    if (!list) return;
+
+    if (input.files.length === 0) {
+        list.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = Array.from(input.files).map(f => `
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--text-primary);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            <span>${f.name}</span>
+            <span style="color: var(--text-secondary); font-size: 0.7rem;">(${(f.size / 1024).toFixed(1)} KB)</span>
+        </div>
+    `).join('');
+}
+
+window.handleProjectFiles = handleProjectFiles;
 
 function openDeleteProjectModal(projectId, projectName) {
     document.getElementById('delete-project-id').value = projectId;
@@ -237,7 +273,7 @@ function closeDeleteProjectModal() {
 async function confirmDeleteProject() {
     const projectId = document.getElementById('delete-project-id').value;
     try {
-        const resp = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
+        const resp = await cyberFetch(`/api/projects/${projectId}`, { method: 'DELETE' });
         if (resp.ok) {
             closeDeleteProjectModal();
             await loadProjects();

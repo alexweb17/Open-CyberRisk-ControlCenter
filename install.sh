@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# --- CyberRisk Control Center (CCC) Installer ---
-# This script automates the setup of the CCC environment.
+# --- Open CyberRisk Control Center (OCCC) Installer ---
+# This script automates the setup of the OCCC environment.
 
-echo "🛡️ Starting CyberRisk Control Center Setup..."
+echo "🛡️ Starting Open CyberRisk Control Center Setup..."
 
 # 1. Check for Dependencies
 echo "🔍 Checking dependencies..."

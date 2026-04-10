@@ -919,6 +919,10 @@
             background: #fef2f2;
             border-color: #fecaca;
         }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
     </style>
 </head>
 
@@ -1030,7 +1034,7 @@
                 <rect x="142" y="170" width="6" height="4" rx="1" fill="#555" />
                 <rect x="150" y="170" width="6" height="4" rx="1" fill="#555" />
             </svg>
-            <h1 class="login-title">CyberRisk Control Center</h1>
+            <h1 class="login-title">Open CyberRisk Control Center</h1>
             <p class="login-subtitle">Gestion de Riesgos de Ciberseguridad</p>
 
             <form id="login-form-local" onsubmit="handleLoginForm(event)"
@@ -1093,7 +1097,7 @@
         <div class="sidebar">
             <div class="main-nav-header">
                 <div class="logo-text">
-                    <div>CyberRisk</div>
+                    <div>Open CyberRisk</div>
                     <div>Control Center</div>
                 </div>
             </div>
@@ -1161,7 +1165,7 @@
                         <line x1="12" y1="8" x2="12" y2="12" />
                         <line x1="12" y1="16" x2="12.01" y2="16" />
                     </svg>
-                    Informes Críticos L3
+                    Informes L3
                 </a>
                 <a href="#" class="nav-item admin-only" onclick="showSection('usuarios')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1189,7 +1193,7 @@
                         <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
                         <path d="M22 12A10 10 0 0 0 12 2v10z" />
                     </svg>
-                    Reportes
+                    CISO 360°
                 </a>
             </div>
             <div class="user-section">
@@ -2095,8 +2099,8 @@
                                     <div
                                         style="display: flex; gap: 0; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                                         <button id="src-tab-marco-base" onclick="switchControlSource('marco_base')"
-                                            style="flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: var(--accent-color); color: white; transition: all 0.2s;">
-                                            🛡️ Marco Base
+                                            style="flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: var(--accent-color); color: #1d1c1a; transition: all 0.2s;">
+                                            🛡️ Lineamientos Base
                                         </button>
                                         <button id="src-tab-framework" onclick="switchControlSource('framework')"
                                             style="flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: transparent; color: var(--text-secondary); transition: all 0.2s;">
@@ -2616,53 +2620,143 @@
 
             <!-- REPORTES VIEW -->
             <div id="reportes-view" class="view-section">
-                <main class="main-content">
-                    <header style="margin-bottom: 40px;">
-                        <h1 style="margin-bottom: 8px;">Reportes Ejecutivos</h1>
-                        <p style="color: var(--text-secondary); margin: 0;">Visualización de KPI's de riesgo y
-                            cumplimiento.
-                        </p>
+                <main class="main-content" style="overflow-y: auto; padding-bottom: 40px; max-width: 100%;">
+                    <header style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1 style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-terracotta)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                                CISO 360°
+                            </h1>
+                            <p style="color: var(--text-secondary); margin: 0;">Visión integral de riesgos, proyectos, procesos y cumplimiento en tiempo real.</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="background: #ECFDF5; color: #059669; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 8px; height: 8px; background: #10B981; border-radius: 50%; display: inline-block; animation: pulse 2s infinite;"></span>
+                                Sistema Activo
+                            </span>
+                        </div>
                     </header>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <section class="glass">
-                            <h3>Cumplimiento por Dominio</h3>
-                            <div
-                                style="height: 200px; display: flex; align-items: flex-end; gap: 20px; padding-top: 20px;">
-                                <div
-                                    style="flex: 1; background: var(--accent-terracotta); height: 75%; border-radius: 4px 4px 0 0;">
-                                </div>
-                                <div style="flex: 1; background: #E5E7EB; height: 40%; border-radius: 4px 4px 0 0;">
-                                </div>
-                                <div
-                                    style="flex: 1; background: var(--accent-terracotta); height: 60%; border-radius: 4px 4px 0 0;">
-                                </div>
-                                <div style="flex: 1; background: #E5E7EB; height: 90%; border-radius: 4px 4px 0 0;">
-                                </div>
+                    <!-- Row 1: KPI Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid var(--accent-terracotta); text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">Proyectos</div>
+                            <div id="ciso-kpi-proyectos" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);">En gestión</div>
+                        </div>
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid #7C3AED; text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">Consultorías</div>
+                            <div id="ciso-kpi-consultorias" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div id="ciso-kpi-consultorias-sub" style="font-size: 0.7rem; color: var(--text-secondary);">Activas</div>
+                        </div>
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid #059669; text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">Procesos</div>
+                            <div id="ciso-kpi-procesos" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);">De negocio</div>
+                        </div>
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid #EF4444; text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">Informes L3</div>
+                            <div id="ciso-kpi-informes" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div id="ciso-kpi-informes-sub" style="font-size: 0.7rem; color: var(--text-secondary);">Registrados</div>
+                        </div>
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid #6366F1; text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">Objetivos</div>
+                            <div id="ciso-kpi-objetivos" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);">Estratégicos</div>
+                        </div>
+                        <div class="info-card" style="padding: 20px; border-left: 4px solid #F59E0B; text-align: center;">
+                            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.04em;">KRIs</div>
+                            <div id="ciso-kpi-kris" style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">0</div>
+                            <div id="ciso-kpi-kris-sub" style="font-size: 0.7rem; color: var(--text-secondary);">Monitoreados</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Financial + KRI Status + Risk Distribution -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                        <div class="glass" style="padding: 24px; border-top: 3px solid var(--accent-terracotta);">
+                            <h3 style="margin: 0 0 16px 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-terracotta)" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                Exposición Financiera
+                            </h3>
+                            <div id="ciso-financial-panel">Cargando datos...</div>
+                        </div>
+                        <div class="glass" style="padding: 24px; border-top: 3px solid #F59E0B;">
+                            <h3 style="margin: 0 0 16px 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                Estado de KRIs
+                            </h3>
+                            <div id="ciso-kri-panel">Cargando datos...</div>
+                        </div>
+                        <div class="glass" style="padding: 24px; border-top: 3px solid #6366F1;">
+                            <h3 style="margin: 0 0 16px 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                                Distribución de Riesgo
+                            </h3>
+                            <div style="height: 180px;"><canvas id="chart-risk-distribution"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Charts — Informes Severity + Consultorías Status + Projects Summary -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                        <div class="glass" style="padding: 24px;">
+                            <h3 style="margin: 0 0 4px 0; font-size: 0.95rem;">Severidad de Informes L3</h3>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0 0 16px 0;">Distribución por nivel de criticidad</p>
+                            <div style="height: 180px;"><canvas id="chart-informes-severity"></canvas></div>
+                        </div>
+                        <div class="glass" style="padding: 24px;">
+                            <h3 style="margin: 0 0 4px 0; font-size: 0.95rem;">Estado de Consultorías</h3>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0 0 16px 0;">Progreso de remediación de hallazgos</p>
+                            <div style="height: 180px;"><canvas id="chart-consultorias-status"></canvas></div>
+                        </div>
+                        <div class="glass" style="padding: 24px;">
+                            <h3 style="margin: 0 0 4px 0; font-size: 0.95rem;">Resumen de Proyectos</h3>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0 0 16px 0;">Cumplimiento promedio y distribución</p>
+                            <div id="ciso-projects-summary">Cargando datos...</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Tables — Top Processes + Active Alerts -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="glass" style="padding: 0; overflow: hidden;">
+                            <div style="padding: 20px 24px 12px 24px; border-bottom: 1px solid var(--border-color);">
+                                <h3 style="margin: 0 0 2px 0; font-size: 0.95rem;">🔥 Top 5 Procesos por Exposición (ALE)</h3>
+                                <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Mayor pérdida esperada anualizada</p>
                             </div>
-                        </section>
-                        <section class="glass">
-                            <h3>Tendencia de Hallazgos</h3>
-                            <div
-                                style="height: 200px; border-left: 2px solid var(--border-color); border-bottom: 2px solid var(--border-color); margin-top: 20px; position: relative;">
-                                <!-- Mock chart line -->
-                                <div
-                                    style="position: absolute; bottom: 10px; left: 0; width: 100%; height: 2px; background: var(--accent-purple); transform: rotate(-15deg); transform-origin: left;">
-                                </div>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #FAFAFA;">
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Proceso</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Riesgo</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">ALE</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ciso-top-processes-body">
+                                    <tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="glass" style="padding: 0; overflow: hidden;">
+                            <div style="padding: 20px 24px 12px 24px; border-bottom: 1px solid var(--border-color);">
+                                <h3 style="margin: 0 0 2px 0; font-size: 0.95rem;">🚨 Alertas Activas</h3>
+                                <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Informes críticos y altos sin resolver</p>
                             </div>
-                        </section>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #FAFAFA;">
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Código</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Título</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Severidad</th>
+                                        <th style="padding: 10px 12px; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; text-align: left;">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ciso-alerts-body">
+                                    <tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </main>
-
-                <aside class="trackers-panel">
-                    <div class="tracker-card">
-                        <div class="tracker-title">Quick Export</div>
-                        <button class="btn-primary" style="margin-top: 10px;">Exportar a PDF</button>
-                        <button class="btn-primary"
-                            style="margin-top: 10px; background: #F3F4F6; color: var(--text-primary);">Exportar a
-                            Excel</button>
-                    </div>
-                </aside>
             </div>
 
             <!-- INFORMES L3 VIEW -->
@@ -2671,7 +2765,7 @@
                     <header
                         style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h1 style="margin-bottom: 8px;">Informes Críticos L3</h1>
+                            <h1 style="margin-bottom: 8px;">Informes L3</h1>
                             <p style="color: var(--text-secondary); margin: 0;">Gestión de incidentes,
                                 vulnerabilidades
                                 críticas
@@ -2904,7 +2998,7 @@
                     style="max-width: 700px; margin: 30px auto; background: white; padding: 32px; position: relative;">
                     <header
                         style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 id="informe-modal-title" style="margin: 0;">Nuevo Informe Crítico L3</h2>
+                        <h2 id="informe-modal-title" style="margin: 0;">Nuevo Informe L3</h2>
                         <button onclick="closeInformeModal()"
                             style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">×</button>
                     </header>
@@ -2990,9 +3084,22 @@
                                     style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
                             </div>
                             <div>
-                                <label class="label" for="informe-area">Área Afectada</label>
-                                <input type="text" id="informe-area" name="area_afectada"
+                                <label class="label" for="informe-area">Área Responsable</label>
+                                <select id="informe-area" name="area_afectada"
                                     style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                                    <option value="Auditoría">Auditoría</option>
+                                    <option value="Comercial Venta Directa">Comercial Venta Directa</option>
+                                    <option value="Comercial Venta Indirecta">Comercial Venta Indirecta</option>
+                                    <option value="Financiero Administrativo">Financiero Administrativo</option>
+                                    <option value="Jurídico">Jurídico</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Operaciones">Operaciones</option>
+                                    <option value="Regulatorio">Regulatorio</option>
+                                    <option value="Relaciones Institucionales y Sustentabilidad">Relaciones Institucionales y Sustentabilidad</option>
+                                    <option value="Servicios y Customer Care">Servicios y Customer Care</option>
+                                    <option value="Talento Humano">Talento Humano</option>
+                                    <option value="Tecnología Información y Comunicación" selected>Tecnología Información y Comunicación</option>
+                                </select>
                             </div>
                         </div>
 
@@ -3064,7 +3171,7 @@
                             </path>
                         </svg>
                     </div>
-                    <h3 style="margin: 0 0 8px 0; font-size: 1.25rem; color: #1D1C1A;">Eliminar Informe Crítico L3</h3>
+                    <h3 style="margin: 0 0 8px 0; font-size: 1.25rem; color: #1D1C1A;">Eliminar Informe L3</h3>
                     <p id="delete-informe-message" style="color: #6B6B6B; font-size: 0.9rem; margin-bottom: 24px;">
                         ¿Está seguro que desea eliminar este informe?
                     </p>
@@ -3166,8 +3273,8 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                             <div>
                                 <label class="label" for="proceso-riesgo">Nivel de Riesgo</label>
-                                <select id="proceso-riesgo" name="nivel_riesgo"
-                                    style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                                <select id="proceso-riesgo" name="nivel_riesgo" disabled
+                                    style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: #f3f4f6; cursor: not-allowed; font-weight: 600;">
                                     <option value="Crítico">Crítico</option>
                                     <option value="Alto">Alto</option>
                                     <option value="Medio" selected>Medio</option>
@@ -3245,8 +3352,8 @@
                                     style="display: flex; gap: 0; border: 2px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #F3F4F6;">
                                     <button type="button" id="proceso-src-tab-marco-base"
                                         onclick="switchProcesoControlSource('marco_base')"
-                                        style="flex: 1; padding: 10px 16px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: var(--accent-color); color: white; transition: all 0.2s;">
-                                        🛡️ Marco Base
+                                        style="flex: 1; padding: 10px 16px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: var(--accent-color); color: #1d1c1a; transition: all 0.2s;">
+                                        🛡️ Lineamientos Base
                                     </button>
                                     <button type="button" id="proceso-src-tab-framework"
                                         onclick="switchProcesoControlSource('framework')"
@@ -3480,7 +3587,7 @@
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                         <div>
                             <h1>Gestión de Usuarios</h1>
-                            <p>Administración de roles y accesos al CyberRisk Control Center</p>
+                            <p>Administración de roles y accesos al Open CyberRisk Control Center</p>
                         </div>
                         <button class="btn-primary" style="width: auto;" onclick="openUserModal()">+ AGREGAR
                             USUARIO</button>
@@ -3610,7 +3717,7 @@
         <script src="js/informes.js"></script>
         <script src="js/procesos.js"></script>
         <script src="js/gobernanza.js"></script>
-
+        <script src="js/reportes.js"></script>
         <script src="js/marcos.js"></script>
         <script src="js/main.js"></script>
         <script src="js/users.js"></script>

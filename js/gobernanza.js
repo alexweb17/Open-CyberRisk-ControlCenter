@@ -77,7 +77,7 @@ function renderRiskAppetiteBar(totalALE) {
     if (!container) return;
 
     const percent = Math.min(100, (totalALE / RISK_APPETITE_THRESHOLD) * 100);
-    const isOver = totalALE > RISK_APETITE_THRESHOLD;
+    const isOver = totalALE > RISK_APPETITE_THRESHOLD;
     const barColor = isOver ? '#B91C1C' : percent > 70 ? '#D97706' : '#10B981';
     const statusText = isOver ? 'Excede el apetito de riesgo' : percent > 70 ? 'Cerca del umbral' : 'Dentro del apetito de riesgo';
     const statusIcon = isOver ? '⚠️' : percent > 70 ? '⚡' : '✓';
@@ -300,7 +300,9 @@ function renderALEByArea(aleByArea, totalALE) {
 async function loadObjectives() {
     try {
         const resp = await cyberFetch('/api/governance/objectives');
-        objectivesData = await resp.json();
+        const data = await resp.json();
+        if (!Array.isArray(data)) { console.warn('[gobernanza] objectives API error:', data); return; }
+        objectivesData = data;
         renderObjectivesTable(objectivesData);
         updateObjectiveAlignment(objectivesData);
         populateKRIObjectiveSelect(objectivesData);
@@ -345,7 +347,9 @@ function getPriorityBadge(prio) {
 async function loadKRIs() {
     try {
         const resp = await cyberFetch('/api/governance/kris');
-        krisData = await resp.json();
+        const data = await resp.json();
+        if (!Array.isArray(data)) { console.warn('[gobernanza] KRI API error:', data); return; }
+        krisData = data;
         renderKRIGrid(krisData);
     } catch (error) {
         console.error('Error loading KRIs:', error);
@@ -521,6 +525,7 @@ async function handleKRISubmit(e) {
         threshold_warning: parseFloat(document.getElementById('kri-warning').value),
         threshold_critical: parseFloat(document.getElementById('kri-critical').value),
         current_value: parseFloat(document.getElementById('kri-current').value || 0)
+    };
     if (!formData.name || isNaN(formData.threshold_critical)) {
         if (typeof showNotification === 'function') {
             showNotification('Verifique el nombre y los umbrales del KRI.', 'warning');

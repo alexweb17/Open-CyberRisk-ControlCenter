@@ -1,6 +1,6 @@
 // --- Authentication Logic (Soberan JWT) ---
 let localUser = null;
-let authToken = localStorage.getItem('cyberrisk_token');
+let authToken = localStorage.getItem('open_cyberrisk_token');
 
 async function login(email, password) {
     console.log("[AUTH] Attempting login for:", email);
@@ -16,7 +16,7 @@ async function login(email, password) {
         if (response.ok) {
             authToken = data.token;
             localUser = data.user;
-            localStorage.setItem('cyberrisk_token', authToken);
+            localStorage.setItem('open_cyberrisk_token', authToken);
 
             console.log("[AUTH] Login successful:", localUser.name);
             updateUI();
@@ -47,7 +47,7 @@ async function login(email, password) {
 function logout() {
     authToken = null;
     localUser = null;
-    localStorage.removeItem('cyberrisk_token');
+    localStorage.removeItem('open_cyberrisk_token');
     updateUI();
     if (typeof showLoginOverlay === 'function') showLoginOverlay();
 }

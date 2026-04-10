@@ -66,13 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (procesoForm) procesoForm.addEventListener('submit', handleProcesoSubmit);
 
     // Explicit button bindings (fallback for inline onclick)
-    const btnCrearRCS = document.getElementById('btn-crear-rcs');
-    if (btnCrearRCS) {
-        btnCrearRCS.addEventListener('click', () => {
-            console.log('[main.js] btn-crear-rcs clicked');
-            createNewRCS();
-        });
-    }
+    // btn-crear-rcs is already handled by inline onclick in index.html
 });
 
 // --- Navigation ---
@@ -109,7 +103,7 @@ function showSection(sectionId) {
     const targetView = document.getElementById(sectionId + '-view');
     if (targetView) {
         targetView.classList.add('active');
-        targetView.style.removeProperty('display');
+        targetView.style.setProperty('display', 'block', 'important');
     } else {
         console.error(`View with ID ${sectionId}-view not found`);
     }
@@ -133,6 +127,8 @@ function showSection(sectionId) {
         if (typeof initMarcos === 'function') initMarcos();
     } else if (sectionId === 'usuarios') {
         if (typeof loadUsers === 'function') loadUsers();
+    } else if (sectionId === 'reportes') {
+        if (typeof loadCISODashboard === 'function') loadCISODashboard();
     }
 }
 

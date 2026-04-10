@@ -69,6 +69,11 @@ function openProcesoModal() {
 
     document.getElementById('proceso-modal-title').textContent = 'Nuevo Proceso de Negocio';
     document.getElementById('proceso-modal').style.display = 'block';
+
+    // Attach listeners for risk calculation
+    document.getElementById('proceso-impacto').addEventListener('change', calculateProcesoRisk);
+    document.getElementById('proceso-probabilidad').addEventListener('change', calculateProcesoRisk);
+    calculateProcesoRisk();
 }
 
 function closeProcesoModal() {
@@ -108,6 +113,11 @@ function openEditProcesoModal(id) {
 
     document.getElementById('proceso-modal-title').textContent = 'Editar Proceso de Negocio';
     document.getElementById('proceso-modal').style.display = 'block';
+
+    // Attach listeners for risk calculation
+    document.getElementById('proceso-impacto').addEventListener('change', calculateProcesoRisk);
+    document.getElementById('proceso-probabilidad').addEventListener('change', calculateProcesoRisk);
+    calculateProcesoRisk();
 }
 
 async function handleProcesoSubmit(e) {
@@ -212,7 +222,7 @@ function switchProcesoControlSource(source) {
 
     if (source === 'marco_base') {
         mbTab.style.background = 'var(--accent-color)';
-        mbTab.style.color = 'white';
+        mbTab.style.color = '#1d1c1a'; // Changed to Black
         fwTab.style.background = 'transparent';
         fwTab.style.color = 'var(--text-secondary)';
         fwPanel.style.display = 'none';
@@ -226,6 +236,49 @@ function switchProcesoControlSource(source) {
         if (searchInput) searchInput.placeholder = 'Buscar requisito regulatorio (código, requisito, guía)...';
     }
 }
+
+// Risk Calculation Matrix
+const PROCESO_RISK_MATRIX = {
+    'Catastrófico': 5, 'Mayor': 4, 'Moderado': 3, 'Menor': 2, 'Insignificante': 1,
+    'Muy Alta': 5, 'Alta': 4, 'Media': 3, 'Baja': 2, 'Muy Baja': 1
+};
+
+function calculateProcesoRisk() {
+    const impacto = document.getElementById('proceso-impacto').value;
+    const probabilidad = document.getElementById('proceso-probabilidad').value;
+    
+    const impVal = PROCESO_RISK_MATRIX[impacto] || 3;
+    const probVal = PROCESO_RISK_MATRIX[probabilidad] || 3;
+    const score = impVal * probVal;
+    
+    let level = 'Medio';
+    if (score >= 16) level = 'Crítico';
+    else if (score >= 10) level = 'Alto';
+    else if (score >= 5) level = 'Medio';
+    else level = 'Bajo';
+    
+    const riskSelect = document.getElementById('proceso-riesgo');
+    if (riskSelect) {
+        riskSelect.value = level;
+    }
+}
+
+// UX: Click outside to hide search results
+document.addEventListener('click', (e) => {
+    const resultsDiv = document.getElementById('proceso-control-search-results');
+    const searchInput = document.getElementById('proceso-control-search-input');
+    if (resultsDiv && searchInput && !resultsDiv.contains(e.target) && e.target !== searchInput) {
+        resultsDiv.style.display = 'none';
+    }
+});
+
+// UX: ESC to hide search results
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const resultsDiv = document.getElementById('proceso-control-search-results');
+        if (resultsDiv) resultsDiv.style.display = 'none';
+    }
+});
 
 async function loadFrameworksForProceso() {
     try {

@@ -8,6 +8,11 @@ async function loadLocalData() {
         const resp = await cyberFetch('/api/master-controls');
         const controls = await resp.json();
 
+        if (!Array.isArray(controls)) {
+            console.warn('[controls.js] API did not return an array:', controls);
+            return;
+        }
+
         liveControls = {};
         controlsMaster = {};
         controls.forEach(item => {
@@ -31,14 +36,12 @@ async function loadLocalData() {
             controlsMaster[item.codigo_control] = mappedItem;
         });
 
-        if (Array.isArray(controls)) {
-            allControls = controls.map(item => ({
-                ...item,
-                _id: item._id ? item._id.toString() : null
-            }));
-            renderLineamientosList(allControls);
-            updateControlSelect(allControls);
-        }
+        allControls = controls.map(item => ({
+            ...item,
+            _id: item._id ? item._id.toString() : null
+        }));
+        renderLineamientosList(allControls);
+        updateControlSelect(allControls);
     } catch (err) {
         console.error("Error loading local data:", err);
     }

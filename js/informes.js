@@ -1,13 +1,15 @@
-// ============ INFORMES CRÍTICOS L3 FUNCTIONS ============
+// ============ INFORMES L3 FUNCTIONS ============
 let informesL3Data = [];
 
 async function loadInformesL3() {
     try {
         const response = await cyberFetch('/api/informesl3');
         const data = await response.json();
+        informesL3Data = data; // Guardar data globalmente para editar
         renderInformesTable(data);
+        updateInformesDashboard(data);
     } catch (error) {
-        console.error('Error loading Informes Críticos L3:', error);
+        console.error('Error loading Informes L3:', error);
     }
 }
 
@@ -17,16 +19,16 @@ function renderInformesTable(data) {
     tbody.innerHTML = data.map(inf => `
         <tr style="border-bottom: 1px solid var(--border-color);">
             <td style="padding: 12px; font-weight: 600;">${inf.codigo_informe}</td>
-            <td style="padding: 12px; font-weight: 500;">${inf.nombre_informe}</td>
-            <td style="padding: 12px;">${inf.tipo_revision}</td>
-            <td style="padding: 12px;">${getSeverityBadge(inf.nivel_riesgo)}</td>
-            <td style="padding: 12px;">${(inf.fecha_emision || '').split('T')[0]}</td>
+            <td style="padding: 12px; font-weight: 500;">${inf.titulo || ''}</td>
+            <td style="padding: 12px;">${inf.tipo || ''}</td>
+            <td style="padding: 12px;">${getSeverityBadge(inf.severidad)}</td>
+            <td style="padding: 12px;">${(inf.fecha_deteccion || '').split('T')[0]}</td>
             <td style="padding: 12px; text-align: right;">
                 <div style="display: flex; gap: 8px; justify-content: flex-end;">
                     <button onclick="openEditInformeModal('${inf._id}')" class="btn-action">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"/></svg>
                     </button>
-                    <button onclick="openDeleteInformeModal('${inf._id}', '${inf.nombre_informe}')" class="btn-delete">
+                    <button onclick="openDeleteInformeModal('${inf._id}', '${inf.titulo}')" class="btn-delete">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </div>
@@ -38,11 +40,6 @@ function renderInformesTable(data) {
 function getSeverityBadge(sev) {
     const colors = { 'Crítica': '#B91C1C', 'Alta': '#D97706', 'Media': '#059669', 'Baja': '#2563EB' };
     return `<span style="background: ${colors[sev] || '#6B7280'}15; color: ${colors[sev] || '#6B7280'}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">${sev || 'Media'}</span>`;
-}
-
-function getEstadoBadgeInformes(est) {
-    const colors = { 'Nuevo': '#3B82F6', 'En Análisis': '#8B5CF6', 'En Remediación': '#F59E0B', 'Resuelto': '#10B981', 'Cerrado': '#6B7280' };
-    return `<span style="background: ${colors[est] || '#9CA3AF'}15; color: ${colors[est] || '#9CA3AF'}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">${est || '-'}</span>`;
 }
 
 function updateInformesDashboard(data) {
@@ -60,7 +57,7 @@ function updateInformesDashboard(data) {
 function openInformeModal() {
     document.getElementById('informe-form').reset();
     document.getElementById('informe-id').value = '';
-    document.getElementById('informe-modal-title').textContent = 'Nuevo Informe Crítico L3';
+    document.getElementById('informe-modal-title').textContent = 'Nuevo Informe L3';
     document.getElementById('informe-modal').style.display = 'block';
 }
 
@@ -73,7 +70,7 @@ function openEditInformeModal(id) {
     if (!inf) return;
 
     document.getElementById('informe-id').value = inf._id;
-    document.getElementById('informe-codigo-num').value = inf.codigo_num || '';
+    document.getElementById('informe-codigo-num').value = inf.codigo_informe ? inf.codigo_informe.split('-')[1] : '';
     document.getElementById('informe-titulo').value = inf.titulo || '';
     document.getElementById('informe-tipo').value = inf.tipo || 'Incidente de Seguridad';
     document.getElementById('informe-origen').value = inf.origen || 'Monitoreo';
@@ -89,15 +86,17 @@ function openEditInformeModal(id) {
     document.getElementById('informe-lecciones').value = inf.lecciones_aprendidas || '';
     document.getElementById('informe-riesgo-residual').value = inf.riesgo_residual || 'N/A';
 
-    document.getElementById('informe-modal-title').textContent = 'Editar Informe Crítico L3';
+    document.getElementById('informe-modal-title').textContent = 'Editar Informe L3';
     document.getElementById('informe-modal').style.display = 'block';
 }
 
 async function handleInformeSubmit(e) {
     if (e) e.preventDefault();
     const id = document.getElementById('informe-id').value;
+    const codigoNum = document.getElementById('informe-codigo-num').value;
+    
     const formData = {
-        codigo_num: document.getElementById('informe-codigo-num').value,
+        codigo_informe: codigoNum ? `L3-${codigoNum.padStart(3, '0')}` : null,
         titulo: document.getElementById('informe-titulo').value,
         tipo: document.getElementById('informe-tipo').value,
         origen: document.getElementById('informe-origen').value,
@@ -117,7 +116,7 @@ async function handleInformeSubmit(e) {
     try {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/informesl3/${id}` : '/api/informesl3';
-        const response = await fetch(url, {
+        const response = await cyberFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -149,7 +148,7 @@ function closeDeleteInformeModal() {
 async function confirmDeleteInforme() {
     const id = document.getElementById('delete-informe-id').value;
     try {
-        const response = await fetch(`/api/informesl3/${id}`, { method: 'DELETE' });
+        const response = await cyberFetch(`/api/informesl3/${id}`, { method: 'DELETE' });
         if (response.ok) {
             closeDeleteInformeModal();
             loadInformesL3();

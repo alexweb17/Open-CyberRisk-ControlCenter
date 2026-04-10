@@ -1,13 +1,13 @@
-# 🔧 Guía para Desarrolladores - CyberRisk Control Center
+# 🔧 Guía para Desarrolladores - Open CyberRisk Control Center (OCCC)
 
-Esta guía está dirigida a desarrolladores que deseen contribuir, mantener o extender el CyberRisk Control Center.
+Esta guía está dirigida a desarrolladores que deseen contribuir, mantener o extender el Open CyberRisk Control Center.
 
 ---
 
 ## Arquitectura del Proyecto
 
 ```
-CyberRiskControlCenter/
+OpenCyberRiskControlCenter/
 ├── server.js                 # Servidor Express + API REST completa
 ├── index.html                # SPA (Single Page Application)
 ├── index.css                 # Estilos de la página de login
@@ -93,8 +93,8 @@ PORT=3000
 ### Instalación rápida
 
 ```bash
-git clone https://github.com/alexweb17/CyberRiskControlCenter.git
-cd CyberRiskControlCenter
+git clone https://github.com/alexweb17/Open-CyberRisk-ControlCenter.git
+cd Open-CyberRisk-ControlCenter
 npm install     # Las dependencias ya están incluidas en node_modules
 npm start       # Inicia el servidor en https://localhost:3000
 ```
@@ -212,4 +212,4 @@ User ──────── Projects ──── MasterControl
 
 ---
 
-*Guía mantenida por el equipo de CyberRisk Control Center – Marzo 2026.*
+*Guía mantenida por el equipo de Open CyberRisk Control Center – Marzo 2026.*

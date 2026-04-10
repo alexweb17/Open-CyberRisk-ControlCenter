@@ -1,5 +1,5 @@
 /**
- * server.js - CyberRisk Control Center (CCC) Backend
+ * server.js - Open CyberRisk Control Center (OCCC) Backend
  * Versión Hardened v1.1
  */
 
@@ -65,6 +65,7 @@ async function getNextAvailableCode(dominio) {
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, '.')));
 
@@ -96,11 +97,11 @@ async function seedAdminUser() {
 
 mongoose.connect(mongoUri)
     .then(async () => {
-        console.log("Conectado a MongoDB - Cerebro CCC Operativo");
+        console.log("Conectado a MongoDB - Cerebro OCCC Operativo");
         await seedAdminUser();
     })
     .catch(err => {
-        console.error("Error de conexión CCC:", err.message);
+        console.error("Error de conexión OCCC:", err.message);
         console.error("Asegúrate de que MongoDB esté corriendo y que las credenciales sean correctas.");
         process.exit(1);
     });
@@ -294,12 +295,23 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    // Solo permitir extensiones seguras
-    const allowedTypes = /jpeg|jpg|png|pdf|xlsx|docx/;
+    // Solo permitir extensiones seguras (incluyendo Office legacy y moderno)
+    const allowedTypes = /jpeg|jpg|png|pdf|docx|doc|xlsx|xls|pptx|ppt/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    
+    // Check mimetype more permissively for common office types
+    const isOffice = file.mimetype.includes('ms-excel') || 
+                   file.mimetype.includes('spreadsheetml') || 
+                   file.mimetype.includes('wordprocessingml') || 
+                   file.mimetype.includes('presentationml') ||
+                   file.mimetype.includes('ms-powerpoint') ||
+                   file.mimetype.includes('msword') ||
+                   file.mimetype.includes('officedocument');
+    
+    const isImage = file.mimetype.startsWith('image/');
+    const isPDF = file.mimetype === 'application/pdf';
 
-    if (extname && mimetype) {
+    if (extname && (isOffice || isImage || isPDF)) {
         return cb(null, true);
     } else {
         cb(new Error('Tipo de archivo no permitido (Solo imágenes, PDF y Office)'));
@@ -461,15 +473,17 @@ app.post('/api/findings', async (req, res) => {
 // Area abbreviations for project codes
 const AREA_ABBREV = {
     'Auditoría': 'AUD',
-    'Comercial': 'CVD',
-    'Finanzas': 'FIN',
-    'Legal': 'LEG',
+    'Comercial Venta Directa': 'CVD',
+    'Comercial Venta Indirecta': 'CVI',
+    'Financiero Administrativo': 'FIN',
+    'Jurídico': 'LEG',
     'Marketing': 'MKT',
     'Operaciones': 'OPE',
-    'Sostenibilidad, Relaciones Institucionales y Cuidado Ambiental': 'SRC',
-    'Servicio al Cliente': 'SAC',
+    'Regulatorio': 'REG',
+    'Relaciones Institucionales y Sustentabilidad': 'SRC',
+    'Servicios y Customer Care': 'SAC',
     'Talento Humano': 'THU',
-    'Tecnología de la Información': 'TIC'
+    'Tecnología Información y Comunicación': 'TIC'
 };
 
 // Generate project code: PROY-AREA-XXX-YYYY
@@ -509,15 +523,36 @@ app.get('/api/projects', async (req, res) => {
     }
 });
 
-// POST new project
-app.post('/api/projects', async (req, res) => {
+// POST create new project
+app.post('/api/projects', upload.array('archivos', 10), async (req, res) => {
     try {
+        if (!req.body) {
+            console.error("POST /api/projects: req.body is undefined");
+            return res.status(400).json({ error: "No se recibieron datos del formulario. Verifique el formato de envío." });
+        }
+
         const { nombre, lider_proyecto, ingeniero_asignado } = req.body;
         if (!nombre || !lider_proyecto || !ingeniero_asignado) {
+            console.warn("POST /api/projects: Faltan campos obligatorios", { nombre, lider_proyecto, ingeniero_asignado });
             return res.status(400).json({ error: "Faltan campos obligatorios para el proyecto." });
         }
 
-        req.body.codigo_proyecto = await getNextProjectCode(req.body.area);
+        // Handle uploaded files
+        const adjuntos = [];
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(f => {
+                adjuntos.push({
+                    nombre: f.originalname,
+                    ruta: f.path,
+                    tipo: f.mimetype,
+                    fecha_subida: new Date()
+                });
+            });
+        }
+        
+        req.body.codigo_proyecto = await getNextProjectCode(req.body.area || 'Tecnología Información y Comunicación');
+        req.body.archivos_adjuntos = adjuntos;
+
         const newProject = new Project(req.body);
         await newProject.save();
 
@@ -530,17 +565,42 @@ app.post('/api/projects', async (req, res) => {
 
         res.status(201).json({ message: "Proyecto creado", data: newProject });
     } catch (err) {
-        console.error("POST /api/projects Error:", err);
-        res.status(400).json({ error: "Error al crear el proyecto. Verifique los campos obligatorios." });
+        console.error("POST /api/projects Error Detallado:", err);
+        res.status(400).json({ 
+            error: "Error interno al crear el proyecto.",
+            details: err.message
+        });
     }
 });
 
 // PUT update project
-app.put('/api/projects/:id', async (req, res) => {
+app.put('/api/projects/:id', upload.array('archivos', 10), async (req, res) => {
     try {
+        if (!req.body) {
+            return res.status(400).json({ error: "No se recibieron datos para actualizar." });
+        }
+
+        // Handle uploaded files
+        const newAdjuntos = [];
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(f => {
+                newAdjuntos.push({
+                    nombre: f.originalname,
+                    ruta: f.path,
+                    tipo: f.mimetype,
+                    fecha_subida: new Date()
+                });
+            });
+        }
+
         // Get the current project to check if area changed
         const currentProject = await Project.findById(req.params.id);
         if (!currentProject) return res.status(404).json({ error: "Proyecto no encontrado" });
+
+        // If new files were uploaded, append them to existing ones
+        if (newAdjuntos.length > 0) {
+            req.body.archivos_adjuntos = [...(currentProject.archivos_adjuntos || []), ...newAdjuntos];
+        }
 
         // If area changed, regenerate project code for the new area
         if (req.body.area && req.body.area !== currentProject.area) {
@@ -567,7 +627,10 @@ app.put('/api/projects/:id', async (req, res) => {
         res.json({ message: "Proyecto actualizado", data: updatedProject });
     } catch (err) {
         console.error("PUT /api/projects Error:", err);
-        res.status(400).json({ error: "Error al actualizar el proyecto." });
+        res.status(400).json({ 
+            error: "Error al actualizar el proyecto.",
+            details: err.message
+        });
     }
 });
 
@@ -595,26 +658,23 @@ app.delete('/api/projects/:id', checkPerms(['security_manager', 'admin']), async
 
 // Generate RCS code: AIC-SIT-RCS-XXX-YY
 async function getNextRCSCode() {
-    const year = new Date().getFullYear().toString().slice(-2); // Last 2 digits (26 for 2026)
-    const pattern = new RegExp(`^AIC-SIT-RCS-\\d{3}-${year}$`);
+    const year = new Date().getFullYear().toString().slice(-2);
+    const prefix = `AIC-SIT-RCS-`;
+    const pattern = new RegExp(`^${prefix}\\d{3}-${year}$`);
 
-    // Include ALL RCS (even deleted) to maintain sequential numbering without gaps
-    const rcsList = await RCS.find({
-        codigo_rcs: pattern
-    }).select('codigo_rcs').lean();
+    const rcsList = await RCS.find({ codigo_rcs: pattern }).select('codigo_rcs').lean();
 
-    const usedNumbers = rcsList
-        .map(r => {
-            const match = r.codigo_rcs.match(/AIC-SIT-RCS-(\d{3})-/);
-            return match ? parseInt(match[1]) : null;
-        })
-        .filter(n => n !== null);
+    let maxNum = 0;
+    rcsList.forEach(r => {
+        const parts = r.codigo_rcs.split('-');
+        if (parts.length >= 4) {
+            const num = parseInt(parts[3]);
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+    });
 
-    // Always use max + 1 to never reuse codes (even from deleted RCS)
-    const maxNum = usedNumbers.length > 0 ? Math.max(...usedNumbers) : 0;
     const nextNum = maxNum + 1;
-
-    return `AIC-SIT-RCS-${String(nextNum).padStart(3, '0')}-${year}`;
+    return `${prefix}${String(nextNum).padStart(3, '0')}-${year}`;
 }
 
 // GET Risk Dashboard aggregated data
@@ -705,12 +765,13 @@ app.get('/api/rcs', async (req, res) => {
 // POST new RCS entry
 app.post('/api/rcs', async (req, res) => {
     try {
-        const { responsable } = req.body;
-        if (!responsable) {
-            return res.status(400).json({ error: "El responsable es obligatorio." });
+        // Fallback for responsable if not provided by frontend
+        if (!req.body.responsable) {
+            req.body.responsable = req.user ? req.user.name : "Consultor OCCC";
         }
         
         req.body.codigo_rcs = await getNextRCSCode();
+        
         const newRCS = new RCS(req.body);
         await newRCS.save();
 
@@ -724,7 +785,7 @@ app.post('/api/rcs', async (req, res) => {
         res.status(201).json({ message: "RCS creado", data: newRCS });
     } catch (err) {
         console.error("POST /api/rcs Error:", err);
-        res.status(400).json({ error: "Error al crear el registro RCS." });
+        res.status(400).json({ error: "Error al crear el registro RCS.", details: err.message, stack: err.stack });
     }
 });
 
@@ -1534,7 +1595,24 @@ app.patch('/api/users/:id', checkPerms(['admin']), async (req, res) => {
     }
 });
 
-// 5. Servidor con Fallback HTTPS/HTTP
+// 5. Manejador Global de Errores para Multer y Otros
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'El archivo es demasiado grande (Máximo 5MB)' });
+        }
+        return res.status(400).json({ error: `Error en la subida de archivos: ${err.message}` });
+    }
+    
+    if (err.message === 'Tipo de archivo no permitido (Solo imágenes, PDF y Office)') {
+        return res.status(400).json({ error: err.message });
+    }
+
+    console.error('SERVER ERROR RECOGNISED:', err);
+    res.status(500).json({ error: 'Ha ocurrido un error inesperado en el servidor.', details: err.message });
+});
+
+// 6. Servidor con Fallback HTTPS/HTTP
 const https = require('https');
 const http = require('http');
 const PORT = process.env.PORT || 3000;

@@ -1,7 +1,7 @@
 {
-  "name": "cyberriskcontrolcenter",
+  "name": "open-cyberriskcontrolcenter",
   "version": "1.0.0",
-  "description": "",
+  "description": "Open CyberRisk Control Center",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alexweb17/CyberRiskControlCenter.git"
+    "url": "git+https://github.com/alexweb17/Open-CyberRisk-ControlCenter.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/alexweb17/CyberRiskControlCenter/issues"
+    "url": "https://github.com/alexweb17/Open-CyberRisk-ControlCenter/issues"
   },
-  "homepage": "https://github.com/alexweb17/CyberRiskControlCenter#readme",
+  "homepage": "https://github.com/alexweb17/Open-CyberRisk-ControlCenter#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

@@ -1,9 +1,9 @@
-# 🛡️ OpenCyberRisk Control Center (OCCC)
+# 🛡️ Open CyberRisk Control Center (OCCC)
 
-![OpenCyberRisk Control Center](imagenes/logoCCC.png)
+![Open CyberRisk Control Center](imagenes/logoCCC.png)
 
 ## Descripción General
-OpenCyberRisk Control Center (OCCC) es una plataforma integral de código abierto diseñada para optimizar la gestión de riesgos de ciberseguridad, el cumplimiento regulatorio y la gobernanza. Pensada para gerentes de seguridad, ingenieros y administradores, ofrece un panel centralizado para rastrear riesgos, gestionar controles y asegurar la alineación con estándares internacionales de seguridad.
+Open CyberRisk Control Center (OCCC) es una plataforma integral de código abierto diseñada para optimizar la gestión de riesgos de ciberseguridad, el cumplimiento regulatorio y la gobernanza. Pensada para gerentes de seguridad, ingenieros y administradores, ofrece un panel centralizado para rastrear riesgos, gestionar controles y asegurar la alineación con estándares internacionales de seguridad.
 
 > **SGRT – Sistema de Gobernanza de Riesgo Tecnológico**
 

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 /**
- * User Schema - CyberRisk Control Center
+ * User Schema - Open CyberRisk Control Center
  * Manages local identities, passwords and RBAC roles.
  */
 const UserSchema = new mongoose.Schema({

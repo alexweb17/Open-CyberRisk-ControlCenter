@@ -70,7 +70,7 @@ function filterRCSTable() {
 }
 
 function showRCSList() {
-    if (typeof showView === 'function') showView('rcs');
+    if (typeof showSection === 'function') showSection('rcs');
     currentRCSId = null;
     currentRCSControls = [];
     currentControlSource = 'marco_base';
@@ -78,7 +78,7 @@ function showRCSList() {
 }
 
 function showRCSDetail() {
-    if (typeof showView === 'function') showView('rcs-detail');
+    if (typeof showSection === 'function') showSection('rcs-detail');
 }
 
 async function createNewRCS() {
@@ -90,6 +90,7 @@ async function createNewRCS() {
         });
         const result = await resp.json();
         if (resp.ok && result.data) {
+            loadRCSData(); // Sync list before detail
             openRCSDetail(result.data._id);
         } else {
             alert('Error al crear nueva consultoría');
@@ -101,15 +102,16 @@ async function createNewRCS() {
 }
 
 async function openRCSDetail(rcsId) {
-    currentRCSId = rcsId;
-    showRCSDetail();
-
-    // Reset source selector to Marco Base
-    switchControlSource('marco_base');
-
     try {
         const resp = await cyberFetch(`/api/rcs/${rcsId}`);
         const rcs = await resp.json();
+
+        currentRCSId = rcsId;
+        currentRCSControls = rcs.controles_asociados || [];
+        showRCSDetail();
+
+        // Reset source selector to Marco Base (renders explorer)
+        switchControlSource('marco_base');
 
         document.getElementById('rcs-detail-id').value = rcs._id;
         document.getElementById('rcs-detail-codigo').value = rcs.codigo_rcs;
@@ -124,7 +126,6 @@ async function openRCSDetail(rcsId) {
             document.getElementById('rcs-detail-fecha').value = '';
         }
 
-        currentRCSControls = rcs.controles_asociados || [];
         renderControlsList();
         updateRCSStats();
 
@@ -192,7 +193,7 @@ function switchControlSource(source) {
 
     if (source === 'marco_base') {
         mbTab.style.background = 'var(--accent-color)';
-        mbTab.style.color = 'white';
+        mbTab.style.color = '#1d1c1a'; // Changed to Black
         fwTab.style.background = 'transparent';
         fwTab.style.color = 'var(--text-secondary)';
         fwPanel.style.display = 'none';
@@ -272,6 +273,10 @@ async function searchControlsForRCS(query) {
         else {
             const fwId = document.getElementById('rcs-framework-select')?.value;
             if (fwId) loadFullFrameworkRequirements(fwId);
+            else {
+                const resultsDiv = document.getElementById('control-search-results');
+                if (resultsDiv) resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Seleccione un marco normativo para ver los controles</div>';
+            }
         }
         return;
     }
@@ -296,7 +301,10 @@ async function searchControlsForRCS(query) {
 }
 
 async function addControlToRCS(controlId, codigoControl, tipoFuente) {
-    if (!currentRCSId) return;
+    if (!currentRCSId) {
+        alert('Error: ID de consultoría no disponible. Cierre y reabra el detalle.');
+        return;
+    }
     tipoFuente = tipoFuente || 'MasterControl';
 
     try {
@@ -535,10 +543,11 @@ async function loadFullFrameworkRequirements(frameworkId) {
 }
 
 function renderExplorerResults(items) {
+    console.log(`[RCS Explorer] Rendering ${items ? items.length : 0} items for source: ${currentControlSource}`);
     const resultsDiv = document.getElementById('control-search-results');
     if (!resultsDiv) return;
 
-    if (!items || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
         resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No se encontraron controles</div>';
         return;
     }

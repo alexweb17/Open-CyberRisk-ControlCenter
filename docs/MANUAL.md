@@ -1,8 +1,8 @@
-# 📖 Manual de Usuario - CyberRisk Control Center (CCC)
+# 📖 Manual de Usuario - Open CyberRisk Control Center (OCCC)
 
 > **SGRT – Sistema de Gobernanza de Riesgo Tecnológico**
 
-Bienvenido al manual completo del CyberRisk Control Center. Esta guía describe cada módulo de la plataforma, los conceptos clave de ciberseguridad que la sustentan y cómo utilizarla para gobernar el riesgo tecnológico de tu organización.
+Bienvenido al manual completo del Open CyberRisk Control Center. Esta guía describe cada módulo de la plataforma, los conceptos clave de ciberseguridad que la sustentan y cómo utilizarla para gobernar el riesgo tecnológico de tu organización.
 
 ---
 
@@ -24,7 +24,7 @@ Bienvenido al manual completo del CyberRisk Control Center. Esta guía describe 
 
 ![Pantalla de Inicio de Sesión](screenshots/01_login.png)
 
-El CyberRisk Control Center utiliza autenticación basada en **JWT (JSON Web Tokens)** con contraseñas cifradas mediante **bcrypt**. El acceso se gestiona a través de **RBAC (Role-Based Access Control)** con tres niveles:
+El Open CyberRisk Control Center utiliza autenticación basada en **JWT (JSON Web Tokens)** con contraseñas cifradas mediante **bcrypt**. El acceso se gestiona a través de **RBAC (Role-Based Access Control)** con tres niveles:
 
 | Rol | Permisos |
 |---|---|
@@ -279,4 +279,4 @@ Cada proceso también se evalúa cualitativamente:
 
 ---
 
-*Documentación generada para CyberRisk Control Center v1.0 – Marzo 2026.*
+*Documentación generada para Open CyberRisk Control Center v1.0 – Marzo 2026.*
