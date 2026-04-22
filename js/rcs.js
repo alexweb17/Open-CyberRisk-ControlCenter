@@ -184,7 +184,7 @@ async function saveRCSDetail() {
 
 // ============ SOURCE SELECTOR ============
 
-function switchControlSource(source) {
+async function switchControlSource(source) {
     currentControlSource = source;
     const mbTab = document.getElementById('src-tab-marco-base');
     const fwTab = document.getElementById('src-tab-framework');
@@ -208,8 +208,8 @@ function switchControlSource(source) {
         if (searchInput) searchInput.placeholder = 'Buscar en Marco Normativo...';
         // Only load if a framework is already selected
         const fwId = document.getElementById('rcs-framework-select')?.value;
-        if (fwId) loadFullFrameworkRequirements(fwId);
-        else document.getElementById('control-search-results').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Seleccione un marco normativo para ver los controles</div>';
+        if (fwId) await loadFullFrameworkRequirements(fwId);
+        else document.getElementById('control-search-results').innerHTML = '<div style="padding: 200px 20px; text-align: center; color: var(--text-secondary);"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; opacity: 0.3;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg><p>Seleccione un marco normativo para ver los controles disponibles.</p></div>';
     }
 }
 
@@ -292,10 +292,16 @@ async function searchControlsForRCS(query) {
             }
 
             const resp = await cyberFetch(url);
+            if (!resp.ok) {
+                const error = await resp.json();
+                resultsDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: #EF4444;">Error en la búsqueda: ${error.error || 'Servidor no disponible'}</div>`;
+                return;
+            }
             const items = await resp.json();
             renderExplorerResults(items);
         } catch (err) {
             console.error('Error searching controls:', err);
+            resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #EF4444;">Error de conexión al buscar controles.</div>';
         }
     }, 300);
 }
@@ -347,6 +353,48 @@ async function removeControlFromRCS(codigoControl) {
     } catch (err) {
         console.error(err);
         alert('Error de conexión');
+    }
+}
+
+async function bulkAddControls() {
+    if (!currentRCSId) return;
+    
+    let source = currentControlSource; // 'marco_base' or 'framework'
+    let framework_id = '';
+    
+    if (source === 'framework') {
+        framework_id = document.getElementById('rcs-framework-select')?.value;
+        if (!framework_id) {
+            showNotification('Seleccione un marco normativo primero', 'error');
+            return;
+        }
+    }
+
+    const confirmMsg = source === 'marco_base' 
+        ? '¿Deseas agregar todos los Lineamientos Base a esta consultoría?' 
+        : '¿Deseas agregar todos los requisitos de este marco a esta consultoría?';
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const resp = await cyberFetch(`/api/rcs/${currentRCSId}/bulk-controls`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source, framework_id })
+        });
+
+        const result = await resp.json();
+        
+        if (resp.ok) {
+            showNotification(`${result.added} controles agregados exitosamente`);
+            // Refresh detail view
+            openRCSDetail(currentRCSId);
+        } else {
+            showNotification('Error al agregar controles: ' + (result.error || 'Error desconocido'), 'error');
+        }
+    } catch (err) {
+        console.error('Bulk add error:', err);
+        showNotification('Error de conexión', 'error');
     }
 }
 
@@ -524,10 +572,13 @@ function confirmDeleteRCS() {
 async function loadFullMasterControls() {
     try {
         const resp = await cyberFetch('/api/master-controls');
+        if (!resp.ok) throw new Error('Error al cargar controles maestros');
         const items = await resp.json();
         renderExplorerResults(items);
     } catch (err) {
         console.error('Error loading full master controls:', err);
+        const resultsDiv = document.getElementById('control-search-results');
+        if (resultsDiv) resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #EF4444;">No se pudieron cargar los controles maestros.</div>';
     }
 }
 
@@ -535,10 +586,13 @@ async function loadFullFrameworkRequirements(frameworkId) {
     if (!frameworkId) return;
     try {
         const resp = await cyberFetch(`/api/frameworks/${frameworkId}/requirements`);
+        if (!resp.ok) throw new Error('Error al cargar requisitos del marco');
         const items = await resp.json();
         renderExplorerResults(items);
     } catch (err) {
         console.error('Error loading framework requirements:', err);
+        const resultsDiv = document.getElementById('control-search-results');
+        if (resultsDiv) resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #EF4444;">No se pudieron cargar los requisitos del marco.</div>';
     }
 }
 
@@ -552,7 +606,12 @@ function renderExplorerResults(items) {
         return;
     }
 
-    resultsDiv.innerHTML = items.map(item => {
+    const header = `<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+        <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Panel de Adición Individual</h4>
+        <span style="font-size: 0.75rem; color: var(--text-secondary);">${items.length} resultados</span>
+    </div>`;
+
+    resultsDiv.innerHTML = header + items.map(item => {
         const isFR = currentControlSource === 'framework';
         const code = isFR ? item.code : item.codigo_control;
         const isAdded = currentRCSControls.some(rc => rc.codigo_control === code);
@@ -567,18 +626,31 @@ function renderExplorerResults(items) {
         const type = isFR ? 'FrameworkRequirement' : 'MasterControl';
 
         return `
-        <div style="background: white; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; position: relative; transition: all 0.2s; ${isAdded ? 'border-color: #10B981; background: #F0FDF410;' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${code}</span>
-                    <span style="background: ${bgColor}; color: ${color}; padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 700;">${badge}</span>
+        <div class="control-explorer-card" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; position: relative; transition: all 0.3s; ${isAdded ? 'border-color: #10B981; background: #F0FDF420;' : 'box-shadow: 0 2px 4px rgba(0,0,0,0.04);'}">
+
+            ${isAdded ? 
+            `<div style="position: absolute; top: 12px; right: 12px; color: #059669; background: #D1FAE5; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; border: 1px solid #A7F3D0;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Agregado
+            </div>` :
+            `<button onclick="addControlToRCS('${id}', '${code}', '${type}')" 
+                style="position: absolute; top: 12px; right: 12px; width: auto; background: var(--accent-terracotta); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;">
+                Agregar
+            </button>`}
+
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-right: 80px;">
+                <div style="background: ${bgColor}; color: ${color}; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0;">
+                    ${isFR ? '📋' : '🛡️'}
                 </div>
-                ${isAdded ? '<span style="color: #10B981; font-weight: 600; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Agregado</span>' :
-                `<button onclick="addControlToRCS('${id}', '${code}', '${type}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">Agregar</button>`}
+                <div style="overflow: hidden;">
+                    <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${code}</span>
+                    <span style="font-size: 0.6rem; font-weight: 700; color: ${color}; text-transform: uppercase;">${badge}</span>
+                </div>
             </div>
-            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${subTitle || ''}</div>
-            <div style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 6px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${title || ''}</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${desc}</div>
+
+            <div style="font-size: 0.7rem; font-weight: 700; color: #6366F1; margin-bottom: 4px; text-transform: uppercase;">${subTitle || ''}</div>
+            <div style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${title || ''}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</div>
         </div>`;
     }).join('');
 }

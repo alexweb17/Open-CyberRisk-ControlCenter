@@ -1573,9 +1573,22 @@
 
                     <!-- Monitor de KRIs -->
                     <div id="gov-kris-tab" class="gov-tab" style="display: none;">
-                        <div id="gov-kri-grid"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                            <!-- Filled by JS -->
+                        <div class="glass">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="text-align: left; border-bottom: 2px solid var(--border-color);">
+                                        <th style="padding: 12px; color: var(--text-secondary);">Indicador (KRI)</th>
+                                        <th style="padding: 12px; color: var(--text-secondary);">Objetivo</th>
+                                        <th style="padding: 12px; color: var(--text-secondary);">Valor Actual</th>
+                                        <th style="padding: 12px; color: var(--text-secondary);">Umbral Crítico</th>
+                                        <th style="padding: 12px; color: var(--text-secondary);">Estado</th>
+                                        <th style="padding: 12px; color: var(--text-secondary); text-align: right;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gov-kris-list">
+                                    <!-- Filled by JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </main>
@@ -2132,6 +2145,24 @@
                                     </div>
                                 </div>
 
+                                <!-- Bulk Add Info/Button -->
+                                <div id="bulk-add-container" style="margin-bottom: 24px; padding: 16px; background: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">Asociación Masiva</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Agrega todos los controles de esta fuente de una sola vez.</div>
+                                    </div>
+                                    <button onclick="bulkAddControls()" class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; white-space: nowrap;">
+                                        📦 Agregar Todos
+                                    </button>
+                                </div>
+
+                                <!-- Section Divider -->
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                                    <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Adición Individual</span>
+                                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                                </div>
+
                                 <!-- Results List (Full list by default) -->
                                 <div id="control-search-results"
                                     style="display: flex; flex-direction: column; gap: 12px;">
@@ -2316,7 +2347,7 @@
                         <button onclick="closeProjectModal()"
                             style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">×</button>
                     </header>
-                    <form id="project-form" onsubmit="handleProjectSubmit(event)">
+                    <form id="project-form">
                         <input type="hidden" id="project-id" value="">
 
                         <div style="margin-bottom: 16px;">
@@ -2350,23 +2381,17 @@
                             <label class="label" for="project-area">Área</label>
                             <select id="project-area" name="area"
                                 style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
-                                <option value="Auditoría">Auditoría</option>
-                                <option value="Comercial Venta Directa">Comercial Venta Directa</option>
-                                <option value="Comercial Venta Indirecta">Comercial Venta Indirecta</option>
-                                <option value="Financiero Administrativo">Financiero Administrativo</option>
-                                <option value="Jurídico">Jurídico</option>
                                 <option value="Marketing">Marketing</option>
                                 <option value="Operaciones">Operaciones</option>
-                                <option value="Regulatorio">Regulatorio</option>
-                                <option value="Relaciones Institucionales y Sustentabilidad">Relaciones
-                                    Institucionales
-                                    y
-                                    Sustentabilidad</option>
-                                <option value="Servicios y Customer Care">Servicios y Customer Care</option>
+                                <option value="Tecnología de la Información" selected>Tecnología de la Información</option>
+                                <option value="Legal">Legal</option>
                                 <option value="Talento Humano">Talento Humano</option>
-                                <option value="Tecnología Información y Comunicación" selected>Tecnología
-                                    Información y
-                                    Comunicación</option>
+                                <option value="Logística">Logística</option>
+                                <option value="Financiero">Financiero</option>
+                                <option value="Servicio al Cliente">Servicio al Cliente</option>
+                                <option value="Relaciones Publicas">Relaciones Publicas</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Auditoría">Auditoría</option>
                             </select>
                         </div>
 
@@ -2463,6 +2488,72 @@
                 </div>
             </div>
 
+            <!-- PROJECT PREVIEW MODAL -->
+            <div id="project-preview-modal" class="modal"
+                style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(29, 28, 26, 0.4); backdrop-filter: blur(4px); overflow-y: auto;">
+                <div class="glass"
+                    style="max-width: 700px; margin: 40px auto; background: white; padding: 32px; position: relative; border-top: 5px solid var(--accent-terracotta);">
+                    <header
+                        style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div id="preview-project-code"
+                                style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">
+                                PROY-000</div>
+                            <h2 id="preview-project-nombre" style="margin: 0; font-size: 1.5rem;">Nombre del Proyecto</h2>
+                        </div>
+                        <button onclick="closeProjectPreview()"
+                            style="background: none; border: none; cursor: pointer; font-size: 1.75rem; color: var(--text-secondary); line-height: 1;">&times;</button>
+                    </header>
+
+                    <div id="preview-project-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div style="grid-column: span 2;">
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Descripción</div>
+                            <div id="preview-project-descripcion" style="font-size: 0.95rem; color: var(--text-primary); background: #f9fbfd; padding: 16px; border-radius: 8px; border-left: 3px solid #e2e8f0; line-height: 1.5;">Sin descripción.</div>
+                        </div>
+
+                        <div>
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase;">Estado</div>
+                            <div id="preview-project-estado-badge" style="margin-top: 4px;">-</div>
+                        </div>
+
+                        <div>
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase;">Área</div>
+                            <div id="preview-project-area" class="value" style="font-weight: 500;">-</div>
+                        </div>
+
+                        <div>
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase;">Líder de Proyecto</div>
+                            <div id="preview-project-lider" class="value" style="font-weight: 500;">-</div>
+                        </div>
+
+                        <div>
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase;">Ingeniero Asignado</div>
+                            <div id="preview-project-ingeniero" class="value" style="font-weight: 500;">-</div>
+                        </div>
+
+                        <div>
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase;">Fecha Solicitud</div>
+                            <div id="preview-project-fecha" class="value" style="font-weight: 500;">-</div>
+                        </div>
+
+                        <div style="grid-column: span 2;">
+                            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 8px 0;">
+                            <div class="label" style="font-size: 0.7rem; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                Documentos y Evidencias
+                            </div>
+                            <div id="preview-project-files" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Files injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px; display: flex; justify-content: flex-end;">
+                        <button onclick="closeProjectPreview()" class="btn-primary" style="width: auto; padding-left: 32px; padding-right: 32px;">Cerrar Vista</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- DELETE RCS MODAL -->
             <div id="delete-rcs-modal" class="modal"
                 style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(29, 28, 26, 0.5); backdrop-filter: blur(6px);">
@@ -2524,21 +2615,14 @@
                                 <select id="modal-dominio">
                                     <option value="Arquitectura">Arquitectura</option>
                                     <option value="Codificación Segura">Codificación Segura</option>
-                                    <option value="Cumplimiento Normativo y Contractual">Cumplimiento Normativo y
-                                        Contractual
-                                    </option>
-                                    <option value="Data Sensible y Transacciones Críticas">Data Sensible y
-                                        Transacciones
-                                        Críticas</option>
+                                    <option value="Cumplimiento Normativo">Cumplimiento Normativo</option>
+                                    <option value="Datos Personales">Datos Personales</option>
+                                    <option value="Transacciones Críticas">Transacciones Críticas</option>
                                     <option value="Gestión de Accesos">Gestión de Accesos</option>
-                                    <option value="Integraciones">Integraciones</option>
-                                    <option value="Lineamientos de Seguridad (Infraestructura y Aplicaciones)">
-                                        Lineamientos
-                                        de
-                                        Seguridad (Infraestructura y Aplicaciones)</option>
-                                    <option value="Seguridad en IA/Automatizaciones">Seguridad en
-                                        IA/Automatizaciones
-                                    </option>
+                                    <option value="Integraciones a Sistemas">Integraciones a Sistemas</option>
+                                    <option value="Infraestructura">Infraestructura</option>
+                                    <option value="Aplicaciones">Aplicaciones</option>
+                                    <option value="Seguridad en IA/Automatizaciones">Seguridad en IA/Automatizaciones</option>
                                 </select>
                             </div>
                             <div>
@@ -3087,18 +3171,17 @@
                                 <label class="label" for="informe-area">Área Responsable</label>
                                 <select id="informe-area" name="area_afectada"
                                     style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
-                                    <option value="Auditoría">Auditoría</option>
-                                    <option value="Comercial Venta Directa">Comercial Venta Directa</option>
-                                    <option value="Comercial Venta Indirecta">Comercial Venta Indirecta</option>
-                                    <option value="Financiero Administrativo">Financiero Administrativo</option>
-                                    <option value="Jurídico">Jurídico</option>
                                     <option value="Marketing">Marketing</option>
                                     <option value="Operaciones">Operaciones</option>
-                                    <option value="Regulatorio">Regulatorio</option>
-                                    <option value="Relaciones Institucionales y Sustentabilidad">Relaciones Institucionales y Sustentabilidad</option>
-                                    <option value="Servicios y Customer Care">Servicios y Customer Care</option>
+                                    <option value="Tecnología de la Información" selected>Tecnología de la Información</option>
+                                    <option value="Legal">Legal</option>
                                     <option value="Talento Humano">Talento Humano</option>
-                                    <option value="Tecnología Información y Comunicación" selected>Tecnología Información y Comunicación</option>
+                                    <option value="Logística">Logística</option>
+                                    <option value="Financiero">Financiero</option>
+                                    <option value="Servicio al Cliente">Servicio al Cliente</option>
+                                    <option value="Relaciones Publicas">Relaciones Publicas</option>
+                                    <option value="Comercial">Comercial</option>
+                                    <option value="Auditoría">Auditoría</option>
                                 </select>
                             </div>
                         </div>
@@ -3224,23 +3307,17 @@
                                 <label class="label" for="proceso-area">Área Responsable</label>
                                 <select id="proceso-area" name="area_responsable"
                                     style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
-                                    <option value="Auditoría">Auditoría</option>
-                                    <option value="Comercial Venta Directa">Comercial Venta Directa</option>
-                                    <option value="Comercial Venta Indirecta">Comercial Venta Indirecta</option>
-                                    <option value="Financiero Administrativo">Financiero Administrativo</option>
-                                    <option value="Jurídico">Jurídico</option>
                                     <option value="Marketing">Marketing</option>
                                     <option value="Operaciones">Operaciones</option>
-                                    <option value="Regulatorio">Regulatorio</option>
-                                    <option value="Relaciones Institucionales y Sustentabilidad">Relaciones
-                                        Institucionales
-                                        y
-                                        Sustentabilidad</option>
-                                    <option value="Servicios y Customer Care">Servicios y Customer Care</option>
+                                    <option value="Tecnología de la Información" selected>Tecnología de la Información</option>
+                                    <option value="Legal">Legal</option>
                                     <option value="Talento Humano">Talento Humano</option>
-                                    <option value="Tecnología Información y Comunicación" selected>Tecnología
-                                        Información y
-                                        Comunicación</option>
+                                    <option value="Logística">Logística</option>
+                                    <option value="Financiero">Financiero</option>
+                                    <option value="Servicio al Cliente">Servicio al Cliente</option>
+                                    <option value="Relaciones Publicas">Relaciones Publicas</option>
+                                    <option value="Comercial">Comercial</option>
+                                    <option value="Auditoría">Auditoría</option>
                                 </select>
                             </div>
                         </div>
@@ -3493,13 +3570,17 @@
                             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Departamento</label>
                             <select id="objective-dept" class="input-field">
                                 <option value="General/Corporativo">General/Corporativo</option>
-                                <option value="Auditoría">Auditoría</option>
-                                <option value="Comercial">Comercial</option>
-                                <option value="Financiero Administrativo">Financiero Administrativo</option>
-                                <option value="Jurídico">Jurídico</option>
                                 <option value="Marketing">Marketing</option>
                                 <option value="Operaciones">Operaciones</option>
-                                <option value="Sistemas/TI">Sistemas/TI</option>
+                                <option value="Tecnología de la Información">Tecnología de la Información</option>
+                                <option value="Legal">Legal</option>
+                                <option value="Talento Humano">Talento Humano</option>
+                                <option value="Logística">Logística</option>
+                                <option value="Financiero">Financiero</option>
+                                <option value="Servicio al Cliente">Servicio al Cliente</option>
+                                <option value="Relaciones Publicas">Relaciones Publicas</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Auditoría">Auditoría</option>
                             </select>
                         </div>
                         <div style="margin-bottom: 20px;">
@@ -3577,6 +3658,37 @@
                             <button type="submit" class="btn-primary" style="width: auto;">Guardar KRI</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- DELETE KRI MODAL -->
+            <div id="delete-kri-modal" class="modal"
+                style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(29, 28, 26, 0.5); backdrop-filter: blur(6px);">
+                <div class="glass"
+                    style="max-width: 420px; margin: 120px auto; background: white; padding: 32px; border-radius: 16px; text-align: center;">
+                    <div
+                        style="width: 64px; height: 64px; margin: 0 auto 20px; background: #FEE2E2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 style="margin: 0 0 8px 0; font-size: 1.25rem; color: #1D1C1A;">Eliminar KRI</h3>
+                    <p style="color: #6B6B6B; font-size: 0.9rem; margin-bottom: 24px;">
+                        ¿Está seguro que desea eliminar este indicador clave de riesgo?
+                    </p>
+                    <input type="hidden" id="delete-kri-id" value="">
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="closeDeleteKRIModal()"
+                            style="padding: 12px 24px; border: 1px solid #E5E5E5; background: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            Cancelar
+                        </button>
+                        <button onclick="confirmDeleteKRI()"
+                            style="padding: 12px 24px; border: none; background: #B91C1C; color: white; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            Eliminar
+                        </button>
+                    </div>
                 </div>
             </div>
 

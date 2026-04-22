@@ -87,7 +87,7 @@ function openEditProcesoModal(id) {
     document.getElementById('proceso-id').value = p._id;
     document.getElementById('proceso-nombre').value = p.nombre_proceso || '';
     document.getElementById('proceso-tipo').value = p.tipo_revision || 'Revisión Periódica';
-    document.getElementById('proceso-area').value = p.area_responsable || 'Tecnología Información y Comunicación';
+    document.getElementById('proceso-area').value = p.area_responsable || 'Tecnología de la Información';
     document.getElementById('proceso-descripcion').value = p.descripcion || '';
     document.getElementById('proceso-responsable').value = p.responsable || '';
     document.getElementById('proceso-estado').value = p.estado || 'Identificado';

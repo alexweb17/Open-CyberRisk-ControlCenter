@@ -30,11 +30,13 @@ const FrameworkRequirement = require('./models/FrameworkRequirement');
 const DOMAIN_PREFIXES = {
     "Arquitectura": "ARQ",
     "Codificación Segura": "DEV",
-    "Cumplimiento Normativo y Contractual": "CUM",
-    "Data Sensible y Transacciones Críticas": "DAT",
+    "Cumplimiento Normativo": "CUM",
+    "Datos Personales": "DAT",
+    "Transacciones Críticas": "TXC",
     "Gestión de Accesos": "ACC",
-    "Integraciones": "INT",
-    "Lineamientos de Seguridad (Infraestructura y Aplicaciones)": "INF",
+    "Integraciones a Sistemas": "INT",
+    "Infraestructura": "INF",
+    "Aplicaciones": "APP",
     "Seguridad en IA/Automatizaciones": "AIA"
 };
 
@@ -295,8 +297,8 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    // Solo permitir extensiones seguras (incluyendo Office legacy y moderno)
-    const allowedTypes = /jpeg|jpg|png|pdf|docx|doc|xlsx|xls|pptx|ppt/;
+    // Solo permitir extensiones seguras (incluyendo Office legacy y moderno, webp, csv y msg)
+    const allowedTypes = /jpeg|jpg|png|webp|pdf|docx|doc|xlsx|xls|csv|pptx|ppt|msg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     
     // Check mimetype more permissively for common office types
@@ -306,15 +308,18 @@ const fileFilter = (req, file, cb) => {
                    file.mimetype.includes('presentationml') ||
                    file.mimetype.includes('ms-powerpoint') ||
                    file.mimetype.includes('msword') ||
-                   file.mimetype.includes('officedocument');
+                   file.mimetype.includes('officedocument') ||
+                   file.mimetype === 'text/csv';
     
-    const isImage = file.mimetype.startsWith('image/');
+    const isImage = file.mimetype.startsWith('image/') || file.mimetype === 'image/webp';
     const isPDF = file.mimetype === 'application/pdf';
+    const isMSG = file.mimetype === 'application/vnd.ms-outlook' || file.originalname.toLowerCase().endsWith('.msg');
 
-    if (extname && (isOffice || isImage || isPDF)) {
+    if (extname && (isOffice || isImage || isPDF || isMSG)) {
         return cb(null, true);
     } else {
-        cb(new Error('Tipo de archivo no permitido (Solo imágenes, PDF y Office)'));
+        console.error(`Rechazado por fileFilter: mimetype=${file.mimetype}, ext=${path.extname(file.originalname)}`);
+        cb(new Error(`Tipo de archivo no permitido (${path.extname(file.originalname)}). Solo imágenes, PDF, Office, CSV y MSG.`));
     }
 };
 
@@ -472,18 +477,17 @@ app.post('/api/findings', async (req, res) => {
 
 // Area abbreviations for project codes
 const AREA_ABBREV = {
-    'Auditoría': 'AUD',
-    'Comercial Venta Directa': 'CVD',
-    'Comercial Venta Indirecta': 'CVI',
-    'Financiero Administrativo': 'FIN',
-    'Jurídico': 'LEG',
     'Marketing': 'MKT',
     'Operaciones': 'OPE',
-    'Regulatorio': 'REG',
-    'Relaciones Institucionales y Sustentabilidad': 'SRC',
-    'Servicios y Customer Care': 'SAC',
+    'Tecnología de la Información': 'TDI',
+    'Legal': 'LEG',
     'Talento Humano': 'THU',
-    'Tecnología Información y Comunicación': 'TIC'
+    'Logística': 'LOG',
+    'Financiero': 'FIN',
+    'Servicio al Cliente': 'SAC',
+    'Relaciones Publicas': 'RRP',
+    'Comercial': 'COM',
+    'Auditoría': 'AUD'
 };
 
 // Generate project code: PROY-AREA-XXX-YYYY
@@ -526,6 +530,8 @@ app.get('/api/projects', async (req, res) => {
 // POST create new project
 app.post('/api/projects', upload.array('archivos', 10), async (req, res) => {
     try {
+        console.log("POST /api/projects - files received:", req.files?.length || 0);
+        console.log("POST /api/projects - body:", req.body);
         if (!req.body) {
             console.error("POST /api/projects: req.body is undefined");
             return res.status(400).json({ error: "No se recibieron datos del formulario. Verifique el formato de envío." });
@@ -550,7 +556,7 @@ app.post('/api/projects', upload.array('archivos', 10), async (req, res) => {
             });
         }
         
-        req.body.codigo_proyecto = await getNextProjectCode(req.body.area || 'Tecnología Información y Comunicación');
+        req.body.codigo_proyecto = await getNextProjectCode(req.body.area || 'Tecnología de la Información');
         req.body.archivos_adjuntos = adjuntos;
 
         const newProject = new Project(req.body);
@@ -576,6 +582,8 @@ app.post('/api/projects', upload.array('archivos', 10), async (req, res) => {
 // PUT update project
 app.put('/api/projects/:id', upload.array('archivos', 10), async (req, res) => {
     try {
+        console.log(`PUT /api/projects/${req.params.id} - files received:`, req.files?.length || 0);
+        console.log(`PUT /api/projects/${req.params.id} - body:`, req.body);
         if (!req.body) {
             return res.status(400).json({ error: "No se recibieron datos para actualizar." });
         }

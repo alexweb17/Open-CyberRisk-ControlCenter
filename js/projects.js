@@ -84,7 +84,7 @@ function renderProjectCards(projects) {
             estadoLower === 'cerrado' ? 'status-cerrado' : 'status-inactivo';
 
         return `
-        <div class="project-card glass" style="position: relative;">
+        <div class="project-card glass clickable-card" style="position: relative; cursor: pointer;" data-project-id="${p._id}">
             <div class="action-btns">
                 <button class="action-btn" data-project-action="edit" data-project-id="${p._id}" title="Editar">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,7 +165,7 @@ function openProjectModal(projectId = null) {
             document.getElementById('project-descripcion').value = project.descripcion || '';
             document.getElementById('project-lider').value = project.lider_proyecto || '';
             document.getElementById('project-ingeniero').value = project.ingeniero_asignado || '';
-            document.getElementById('project-area').value = project.area || 'Tecnología Información y Comunicación';
+            document.getElementById('project-area').value = project.area || 'Tecnología de la Información';
             document.getElementById('project-fecha-solicitud').value = project.fecha_solicitud ? project.fecha_solicitud.split('T')[0] : '';
             document.getElementById('project-estado').value = project.estado;
         }
@@ -179,6 +179,50 @@ function openProjectModal(projectId = null) {
 
 function closeProjectModal() {
     document.getElementById('project-modal').style.display = 'none';
+}
+
+function openProjectPreview(projectId) {
+    const project = allProjects.find(p => p._id === projectId);
+    if (!project) return;
+
+    document.getElementById('preview-project-code').innerText = project.codigo_proyecto;
+    document.getElementById('preview-project-nombre').innerText = project.nombre;
+    document.getElementById('preview-project-descripcion').innerText = project.descripcion || 'Sin descripción disponible.';
+    document.getElementById('preview-project-area').innerText = project.area || 'Sin área asignada';
+    document.getElementById('preview-project-lider').innerText = project.lider_proyecto || 'Sin asignar';
+    document.getElementById('preview-project-ingeniero').innerText = project.ingeniero_asignado || 'Sin asignar';
+    document.getElementById('preview-project-fecha').innerText = project.fecha_solicitud ? new Date(project.fecha_solicitud).toLocaleDateString('es-ES') : 'N/A';
+    
+    // Status Badge
+    const badge = document.getElementById('preview-project-estado-badge');
+    const estado = project.estado || 'Activo';
+    const statusClass = estado.toLowerCase() === 'activo' ? 'status-activo' : (estado.toLowerCase() === 'cerrado' ? 'status-cerrado' : 'status-inactivo');
+    badge.innerHTML = `<span class="project-status-badge ${statusClass}" style="position: static; padding: 4px 12px; font-size: 0.8rem;">${estado}</span>`;
+
+    // Files
+    const filesList = document.getElementById('preview-project-files');
+    if (project.archivos_adjuntos && project.archivos_adjuntos.length > 0) {
+        filesList.innerHTML = project.archivos_adjuntos.map(f => `
+            <a href="/${f.ruta.replace(/^\.\//, '')}" target="_blank" class="glass" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; text-decoration: none; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; transition: background 0.2s;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600; font-size: 0.85rem;">${f.nombre}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary);">${f.tipo || 'Archivo'}</span>
+                    </div>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-terracotta)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+        `).join('');
+    } else {
+        filesList.innerHTML = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.85rem;">No hay archivos adjuntos.</div>';
+    }
+
+    document.getElementById('project-preview-modal').style.display = 'block';
+}
+
+function closeProjectPreview() {
+    document.getElementById('project-preview-modal').style.display = 'none';
 }
 
 async function handleProjectSubmit(e) {
@@ -195,6 +239,12 @@ async function handleProjectSubmit(e) {
             alert('Nombre, Líder e Ingeniero son obligatorios.');
         }
         return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Guardando...';
     }
 
     try {
@@ -231,11 +281,24 @@ async function handleProjectSubmit(e) {
             }
         } else {
             const err = await resp.json();
-            alert('Error: ' + (err.error || 'Desconocido'));
+            if (typeof showNotification === 'function') {
+                showNotification('Error: ' + (err.error || 'Desconocido') + (err.details ? ' - ' + err.details : ''), 'error');
+            } else {
+                alert('Error: ' + (err.error || 'Desconocido') + (err.details ? '\nDetalles: ' + err.details : ''));
+            }
         }
     } catch (err) {
         console.error('Project submit error:', err);
-        alert('Error de conexión');
+        if (typeof showNotification === 'function') {
+            showNotification('Error de conexión', 'error');
+        } else {
+            alert('Error de conexión');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Guardar Proyecto';
+        }
     }
 }
 

@@ -9,20 +9,19 @@ const ProjectSchema = new mongoose.Schema({
     area: {
         type: String,
         enum: [
-            'Auditoría',
-            'Comercial Venta Directa',
-            'Comercial Venta Indirecta',
-            'Financiero Administrativo',
-            'Jurídico',
             'Marketing',
             'Operaciones',
-            'Regulatorio',
-            'Relaciones Institucionales y Sustentabilidad',
-            'Servicios y Customer Care',
+            'Tecnología de la Información',
+            'Legal',
             'Talento Humano',
-            'Tecnología Información y Comunicación'
+            'Logística',
+            'Financiero',
+            'Servicio al Cliente',
+            'Relaciones Publicas',
+            'Comercial',
+            'Auditoría'
         ],
-        default: 'Tecnología Información y Comunicación'
+        default: 'Tecnología de la Información'
     },
     fecha_solicitud: { type: Date },
     fecha_emision: { type: Date },

@@ -34,12 +34,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Project Actions
         const projectBtn = e.target.closest('button[data-project-action]');
         if (projectBtn) {
-            const action = projectBtn.dataset.projectAction; // Corrected camelCase
+            const action = projectBtn.dataset.projectAction;
             const id = projectBtn.dataset.projectId;
             const name = projectBtn.dataset.projectName;
-            console.log(`[Project Action Click] Action: ${action}, ID: ${id}, Name: ${name}`);
             if (action === 'edit') openProjectModal(id);
             if (action === 'delete') openDeleteProjectModal(id, name);
+        } else {
+            // Project Card Click (Quick View)
+            const projectCard = e.target.closest('.project-card.clickable-card');
+            if (projectCard && !e.target.closest('button') && !e.target.closest('.action-btns')) {
+                const id = projectCard.dataset.projectId;
+                if (id) openProjectPreview(id);
+            }
         }
 
         // Consultorías Actions
@@ -181,6 +187,8 @@ async function cyberFetch(url, options = {}) {
 // Projects
 window.openProjectModal = openProjectModal;
 window.closeProjectModal = closeProjectModal;
+window.openProjectPreview = openProjectPreview;
+window.closeProjectPreview = closeProjectPreview;
 window.handleProjectSubmit = handleProjectSubmit;
 window.openDeleteProjectModal = openDeleteProjectModal;
 window.closeDeleteProjectModal = closeDeleteProjectModal;

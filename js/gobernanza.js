@@ -350,49 +350,66 @@ async function loadKRIs() {
         const data = await resp.json();
         if (!Array.isArray(data)) { console.warn('[gobernanza] KRI API error:', data); return; }
         krisData = data;
-        renderKRIGrid(krisData);
+        renderKRITable(krisData);
     } catch (error) {
         console.error('Error loading KRIs:', error);
     }
 }
 
-function renderKRIGrid(data) {
-    const grid = document.getElementById('gov-kri-grid');
-    if (!grid) return;
+function renderKRITable(data) {
+    const list = document.getElementById('gov-kris-list');
+    if (!list) return;
 
     if (data.length === 0) {
-        grid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); grid-column: 1/-1;">No hay KRIs registrados. Comience agregando uno vinculado a un objetivo estratégico.</p>';
+        list.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-secondary);">No hay KRIs registrados. Comience agregando uno vinculado a un objetivo estratégico.</td></tr>';
         return;
     }
 
-    grid.innerHTML = data.map(kri => {
+    list.innerHTML = data.map(kri => {
         const status = getKRIStatus(kri);
-        const percent = Math.min(100, (kri.current_value / kri.threshold_critical) * 100);
+        const percent = Math.min(100, (kri.current_value / (kri.threshold_critical || 1)) * 100);
 
         return `
-            <div class="glass" style="padding: 20px; border-left: 4px solid ${status.color};">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                    <div>
-                        <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">${kri.name}</div>
-                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">OBJ: ${kri.objective_id?.name || 'N/A'}</div>
+            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
+                <td style="padding: 12px;">
+                    <div style="font-weight: 600; color: var(--text-primary);">${kri.name}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">Unidad: ${kri.unit}</div>
+                </td>
+                <td style="padding: 12px; font-size: 0.85rem; color: var(--text-secondary);">
+                    ${kri.objective_id?.name || 'N/A'}
+                </td>
+                <td style="padding: 12px;">
+                    <div style="font-weight: 700; color: ${status.color};">${kri.current_value}${kri.unit}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">Advertencia: ${kri.threshold_warning}${kri.unit}</div>
+                </td>
+                <td style="padding: 12px; font-size: 0.85rem; font-weight: 600;">
+                    ${kri.threshold_critical}${kri.unit}
+                </td>
+                <td style="padding: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 600; color: ${status.color}; text-transform: uppercase;">${status.label}</span>
+                        <div style="height: 6px; width: 60px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden;">
+                            <div style="height: 100%; width: ${percent}%; background: ${status.color};"></div>
+                        </div>
                     </div>
-                </div>
-                
-                <div style="margin: 20px 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                        <div style="font-size: 1.75rem; font-weight: 700; color: ${status.color};">${kri.current_value}${kri.unit}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Umbral Crítico: ${kri.threshold_critical}${kri.unit}</div>
+                </td>
+                <td style="padding: 12px; text-align: right;">
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button onclick="openEditKRIModal('${kri._id}')" class="btn-action" title="Editar" style="padding: 6px; border-radius: 6px; background: #EEF2FF; color: #4F46E5; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="openDeleteKRIModal('${kri._id}')" class="btn-action" title="Eliminar" style="padding: 6px; border-radius: 6px; background: #FEF2F2; color: #EF4444; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <div style="height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
-                        <div style="height: 100%; width: ${percent}%; background: ${status.color};"></div>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
-                    <span style="font-weight: 600; color: ${status.color}; uppercase">${status.label}</span>
-                    <button onclick="openEditKRIModal('${kri._id}')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; padding: 4px;">Editar</button>
-                </div>
-            </div>
+                </td>
+            </tr>
         `;
     }).join('');
 }
@@ -413,7 +430,7 @@ function switchGovTab(tab) {
         b.style.color = 'var(--text-secondary)';
     });
 
-    document.getElementById(`gov-${tab}-tab`).style.display = tab === 'kris' ? 'grid' : 'block';
+    document.getElementById(`gov-${tab}-tab`).style.display = 'block';
 
     const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.toLowerCase().includes(tab === 'resumen' ? 'resumen' : tab === 'objetivos' ? 'objetivos' : 'kris'));
     if (activeBtn) {
@@ -509,6 +526,53 @@ function closeKRIModal() {
     document.getElementById('kri-modal').style.display = 'none';
 }
 
+function openEditKRIModal(id) {
+    const kri = krisData.find(k => k._id === id);
+    if (!kri) return;
+
+    populateKRIObjectiveSelect(objectivesData);
+
+    document.getElementById('kri-id').value = kri._id;
+    document.getElementById('kri-name').value = kri.name;
+    document.getElementById('kri-objective').value = kri.objective_id?._id || kri.objective_id || '';
+    document.getElementById('kri-unit').value = kri.unit;
+    document.getElementById('kri-warning').value = kri.threshold_warning;
+    document.getElementById('kri-critical').value = kri.threshold_critical;
+    document.getElementById('kri-current').value = kri.current_value;
+
+    document.getElementById('kri-modal-title').textContent = 'Editar Key Risk Indicator (KRI)';
+    document.getElementById('kri-modal').style.display = 'block';
+}
+
+function openDeleteKRIModal(id) {
+    document.getElementById('delete-kri-id').value = id;
+    document.getElementById('delete-kri-modal').style.display = 'block';
+}
+
+function closeDeleteKRIModal() {
+    document.getElementById('delete-kri-modal').style.display = 'none';
+}
+
+async function confirmDeleteKRI() {
+    const id = document.getElementById('delete-kri-id').value;
+    if (!id) return;
+
+    try {
+        const resp = await cyberFetch(`/api/governance/kris/${id}`, { method: 'DELETE' });
+        if (resp.ok) {
+            closeDeleteKRIModal();
+            loadGovernanceData();
+            if (typeof showNotification === 'function') showNotification('KRI eliminado correctamente', 'success');
+        } else {
+            const err = await resp.json();
+            if (typeof showNotification === 'function') showNotification(err.error || 'Error al eliminar KRI', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        if (typeof showNotification === 'function') showNotification('Error de conexión', 'error');
+    }
+}
+
 function populateKRIObjectiveSelect(objs) {
     const select = document.getElementById('kri-objective');
     if (!select) return;
@@ -595,4 +659,8 @@ window.openEditObjectiveModal = openEditObjectiveModal;
 window.deleteObjective = deleteObjective;
 window.openKRIModal = openKRIModal;
 window.closeKRIModal = closeKRIModal;
+window.openEditKRIModal = openEditKRIModal;
+window.openDeleteKRIModal = openDeleteKRIModal;
+window.closeDeleteKRIModal = closeDeleteKRIModal;
+window.confirmDeleteKRI = confirmDeleteKRI;
 window.handleKRISubmit = handleKRISubmit;
