@@ -111,19 +111,50 @@
     color: #4ade80;
 }
 
+/* ═══════════════════════════════════════════════════════
+   Elegant Minimal Scrollbar — Light Theme
+   ═══════════════════════════════════════════════════════ */
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--card);
+    background: transparent;
     border-radius: 10px;
 }
 
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted);
+    background: rgba(0, 0, 0, 0.28);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Show scrollbar more visibly on hover for containers */
+.main-content:hover::-webkit-scrollbar-thumb,
+.trackers-panel:hover::-webkit-scrollbar-thumb,
+.view-section:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.main-content:hover::-webkit-scrollbar-thumb:hover,
+.trackers-panel:hover::-webkit-scrollbar-thumb:hover,
+.view-section:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.32);
 }

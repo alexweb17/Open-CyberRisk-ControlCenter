@@ -28,6 +28,14 @@ check_columns.py
 ListaControles/
 Tablas de Sharepoint/
 
+# User uploads (evidence files)
+uploads/evidencias/*
+!uploads/evidencias/.gitkeep
+
+# Test files
+test_upload.js
+
 # Sensitive files
 .env
+.gemini/
 
