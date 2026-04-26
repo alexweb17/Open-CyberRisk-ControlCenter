@@ -26,7 +26,6 @@ inspect_excel.js
 import_controls.js
 check_columns.py
 ListaControles/
-Tablas de Sharepoint/
 
 # User uploads (evidence files)
 uploads/evidencias/*
